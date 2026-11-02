@@ -1,0 +1,6 @@
+#!/bin/sh
+case "$3" in
+    rev-parse) printf 'sha1\n' ;;
+    ls-tree) printf '100644 blob %s\tpackage/file\0' "$GIT_TREE_TEST_DIGEST" ;;
+    *) exit 2 ;;
+esac

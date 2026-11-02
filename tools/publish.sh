@@ -70,13 +70,21 @@ shopt -s nullglob
 notes=("$root"/notes/*_release_"$tag".md)
 [[ ${#notes[@]} == 1 && -f ${notes[0]} && ! -L ${notes[0]} ]] \
     || fail 'Write exactly one authored notes/NNN_release_vX.Y.Z.md for this tag before committing the release source.'
-wheel=provider_core-$version-py3-none-any.whl
-sdist=provider_core-$version.tar.gz
-lock=provider_core-$version-install.lock
-native_lock=provider_core-$version-native-install.lock
-record=provider_core-$version-release.json
-manifest=provider_core-$version-sha256.json
-names=("$wheel" "$sdist" "$lock" "$native_lock" "$record" "$manifest")
+note_path=${notes[0]#"$root"/}
+if note_entry=$(git ls-tree --format='%(objectmode) %(objecttype) %(objectname)' "$commit" -- "$note_path"); then :; else
+    fail 'Cannot inspect the authored release note in the committed source.'
+fi
+[[ $note_entry =~ ^100(644|755)\ blob\ [0-9a-f]{40}$ ]] \
+    || fail 'The authored release note must be a regular file in the committed source.'
+if ! git show "$commit:$note_path" | cmp -s -- "${notes[0]}" -; then
+    fail 'The authored release note must match the file committed at the source revision.'
+fi
+wheel=linux_idmap-$version-py3-none-any.whl
+sdist=linux_idmap-$version.tar.gz
+lock=linux_idmap-$version-install.lock
+record=linux_idmap-$version-release.json
+manifest=linux_idmap-$version-sha256.json
+names=("$wheel" "$sdist" "$lock" "$record" "$manifest")
 
 if [[ $action == prepare ]]; then
     [[ -v OUTPUT_INPUT_ORIGIN && $OUTPUT_INPUT_ORIGIN == 'command line' && -v OUTPUT_INPUT && -n $OUTPUT_INPUT ]] \
@@ -90,10 +98,10 @@ if [[ $action == prepare ]]; then
     source "$root/tools/docker_context.sh"
     select_docker_context
     mkdir -m 700 -- "$scratch/artifacts"
-    cp -- "${notes[0]}" "$scratch/release-notes.md"
-    nested 'release package build' env WHEELHOUSE_INPUT_ORIGIN='command line' WHEELHOUSE_INPUT="$wheelhouse_directory" OUTPUT_INPUT_ORIGIN='command line' OUTPUT_INPUT="$scratch/artifacts" bash "$root/tools/provider_core.sh" build > "$scratch/release-build.log" 2>&1
+    native 'capture committed release note' 30 git show "$commit:$note_path" > "$scratch/release-notes.md"
+    nested 'release package build' env WHEELHOUSE_INPUT_ORIGIN='command line' WHEELHOUSE_INPUT="$wheelhouse_directory" OUTPUT_INPUT_ORIGIN='command line' OUTPUT_INPUT="$scratch/artifacts" bash "$root/tools/linux_idmap.sh" build > "$scratch/release-build.log" 2>&1
     [[ -f $scratch/artifacts/$wheel && -f $scratch/artifacts/$sdist ]] || fail 'TAG must match the built package version.'
-    nested 'exact release artifact qualification' env WHEELHOUSE_INPUT_ORIGIN='command line' WHEELHOUSE_INPUT="$wheelhouse_directory" ARTIFACTS_INPUT_ORIGIN='command line' ARTIFACTS_INPUT="$scratch/artifacts" bash "$root/tools/provider_core.sh" package > "$scratch/release-test.log" 2>&1
+    nested 'exact release artifact qualification' env WHEELHOUSE_INPUT_ORIGIN='command line' WHEELHOUSE_INPUT="$wheelhouse_directory" ARTIFACTS_INPUT_ORIGIN='command line' ARTIFACTS_INPUT="$scratch/artifacts" bash "$root/tools/linux_idmap.sh" package > "$scratch/release-test.log" 2>&1
     require_unchanged_source
     printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then use publish/release TAG=%s ARTIFACTS=%q.\n' "$scratch" "$tag" "$scratch"
     exit
@@ -114,7 +122,9 @@ for name in release-build.log release-test.log release-notes.md; do
     native 'capture release evidence' 30 cp --no-dereference -- "$publication_inputs/$name" "$scratch/$name"
     [[ -f $scratch/$name && ! -L $scratch/$name ]] || fail 'Release logs and authored notes must be regular files without links.'
 done
-cmp -s -- "${notes[0]}" "$scratch/release-notes.md" || fail 'Prepared release prose differs from the committed authored note; prepare the intended source again.'
+if ! git show "$commit:$note_path" | cmp -s -- "$scratch/release-notes.md" -; then
+    fail 'Prepared release prose differs from the committed authored note; prepare the intended source again.'
+fi
 command -v jq >/dev/null || fail 'Install the jq host prerequisite before publishing.'
 [[ $(jq -er '.source_revision' "$scratch/assets/$record") == "$commit" ]] || fail 'Prepared artifacts must identify the current committed source.'
 
@@ -123,12 +133,12 @@ verify_qualified_artifacts() {
     local -A qualified=()
     while read -r marker checksum name extra; do
         [[ $marker == QUALIFIED_SHA256 ]] || continue
-        case "$name" in "$wheel"|"$sdist"|"$lock"|"$native_lock"|"$record"|"$manifest") ;; *) fail 'Qualification returned an unexpected artifact name.' ;; esac
+        case "$name" in "$wheel"|"$sdist"|"$lock"|"$record"|"$manifest") ;; *) fail 'Qualification returned an unexpected artifact name.' ;; esac
         [[ -z $extra && $checksum =~ ^[0-9a-f]{64}$ && ! -v qualified["$name"] ]] \
             || fail 'Qualification returned a malformed or duplicate artifact receipt.'
         qualified["$name"]=$checksum
     done < "$scratch/release-test.log"
-    [[ ${#qualified[@]} == 6 ]] || fail 'Exact installed-artifact qualification did not return all six artifact hashes.'
+    [[ ${#qualified[@]} == 5 ]] || fail 'Exact installed-artifact qualification did not return all five artifact hashes.'
     for name in "${names[@]}"; do
         [[ $(sha256sum "$scratch/assets/$name" | cut -d ' ' -f1) == "${qualified[$name]}" ]] \
             || fail 'Release artifact bytes differ from the successful qualification receipt.'
@@ -152,26 +162,28 @@ while IFS= read -r -d '' rule; do
 done < "$scratch/url-rewrites"
 native 'GitHub repository inspection' 30 gh repo view "$push_url" --json nameWithOwner --jq .nameWithOwner > "$scratch/repository"
 repository=$(cat "$scratch/repository")
-[[ $repository == numpde/nmr-provider-tools ]] || fail 'Origin must identify numpde/nmr-provider-tools.'
+[[ $repository == numpde/container-tools ]] || fail 'Origin must identify numpde/container-tools.'
 resource_status=0
 native 'existing GitHub release inspection' 30 gh api --hostname github.com --include "repos/$repository/releases/tags/$tag" > "$scratch/existing-release" 2> "$scratch/existing-release.stderr" || resource_status=$?
 if [[ $resource_status == 0 ]]; then fail 'This GitHub release already exists; published assets must never be replaced.'; fi
 [[ $resource_status == 1 ]] && head -n 1 "$scratch/existing-release" | tr -d '\r' | grep -Eq '^HTTP/[0-9.]+ 404( |$)' \
     || fail 'Cannot establish release absence; inspect the retained response before retrying.'
 if git show-ref --verify --quiet "refs/tags/$tag"; then
-    [[ $(git rev-parse "$tag^{}") == "$commit" ]] || fail 'The existing local tag identifies another source commit.'
+    tag_object=$(git rev-parse "refs/tags/$tag")
 else
-    git tag -a "$tag" "$commit" -m "Release provider-core $version"
+    git tag -a "$tag" "$commit" -m "Release linux-idmap $version"
+    tag_object=$(git rev-parse "refs/tags/$tag")
 fi
+[[ $(git rev-parse "$tag_object^{}") == "$commit" ]] || fail 'The existing local tag identifies another source commit.'
 require_unchanged_source
 # Use the existing gh identity for this HTTPS push only; never rewrite host
 # credential configuration or carry tokens into build/test containers.
-native 'release tag push' 120 git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push "$push_url" "refs/tags/$tag:refs/tags/$tag"
-native 'draft release creation' 120 gh release create "$tag" --repo "$repository" --verify-tag --draft --title "provider-core $version" \
+native 'release tag push' 120 git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push "$push_url" "$tag_object:refs/tags/$tag"
+native 'draft release creation' 120 gh release create "$tag" --repo "$repository" --verify-tag --draft --title "linux-idmap $version" \
     --notes-file "$scratch/release-notes.md" "$scratch/assets/"* "$scratch/release-build.log" "$scratch/release-test.log"
 native 'uploaded draft acquisition' 120 gh release download "$tag" --repo "$repository" --dir "$scratch/downloaded"
 downloaded=("$scratch/downloaded/"*)
-[[ ${#downloaded[@]} == 8 ]] || fail 'Downloaded draft asset set differs from the eight qualified public files.'
+[[ ${#downloaded[@]} == 7 ]] || fail 'Downloaded draft asset set differs from the seven qualified public files.'
 for name in "${names[@]}"; do
     cmp -- "$scratch/assets/$name" "$scratch/downloaded/$name" \
         || fail 'Downloaded artifact differs from the qualified bytes; retain the draft for inspection.'

@@ -6,15 +6,25 @@ case "$1" in
     status)
         if [[ $PUBLISH_TEST_MODE == status-error ]]; then exit 3; fi
         exit 0 ;;
-    rev-parse) printf '%040d\n' 1 ;;
-    remote) printf 'https://github.com/numpde/nmr-provider-tools.git\n' ;;
+    rev-parse)
+        if [[ $PUBLISH_TEST_MODE == wrong-tag && $2 == *'^{}' ]]; then printf '%040d\n' 2
+        else printf '%040d\n' 1; fi ;;
+    ls-tree)
+        if [[ $PUBLISH_TEST_MODE == uncommitted-note ]]; then exit 0
+        elif [[ $PUBLISH_TEST_MODE == committed-symlink ]]; then printf '120000 blob %040d\n' 1
+        else printf '100644 blob %040d\n' 1; fi ;;
+    show)
+        if [[ $PUBLISH_TEST_MODE == git-show-error ]]; then exit 1; fi
+        if [[ $PUBLISH_TEST_MODE == different-committed-note ]]; then printf 'different committed note\n'; exit 0; fi
+        cat -- "$PUBLISH_TEST_COMMITTED_NOTE" ;;
+    remote) printf 'https://github.com/numpde/container-tools.git\n' ;;
     config)
         case "$PUBLISH_TEST_MODE" in
             matching) printf 'url.elsewhere.pushinsteadof\nhttps://github.com/numpde/\0' ;;
             config-error) exit 3 ;;
             *) exit 1 ;;
         esac ;;
-    show-ref) exit 1 ;;
+    show-ref) [[ $PUBLISH_TEST_MODE == wrong-tag ]] ;;
     tag|push) exit 0 ;;
     *) exit 97 ;;
 esac

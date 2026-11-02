@@ -2,7 +2,7 @@
 set -euo pipefail
 printf 'gh %s\n' "$*" >> "$PUBLISH_TEST_TRACE"
 case "$1 $2" in
-    'repo view') printf 'numpde/nmr-provider-tools\n' ;;
+    'repo view') printf 'numpde/container-tools\n' ;;
     'api --hostname')
         case "$PUBLISH_TEST_MODE" in
             existing) printf 'HTTP/2.0 200 OK\r\n\r\n{}\n' ;;
@@ -11,9 +11,16 @@ case "$1 $2" in
         esac ;;
     'release create')
         mkdir -- "$PUBLISH_TEST_TRACE.uploads"
+        note_next=false
         for argument in "$@"; do
+            if "$note_next"; then
+                cp -- "$argument" "$PUBLISH_TEST_TRACE.notes"
+                note_next=false
+            elif [[ $argument == --notes-file ]]; then
+                note_next=true
+            fi
             case "$argument" in
-                */provider_core-0.2.0-*|*/provider_core-0.2.0.tar.gz|*/release-build.log|*/release-test.log)
+                */linux_idmap-0.2.0-*|*/linux_idmap-0.2.0.tar.gz|*/release-build.log|*/release-test.log)
                     cp -- "$argument" "$PUBLISH_TEST_TRACE.uploads/" ;;
             esac
         done ;;
@@ -22,7 +29,7 @@ case "$1 $2" in
             if [[ $1 == --dir ]]; then
                 mkdir -- "$2"
                 cp -- "$PUBLISH_TEST_TRACE.uploads/"* "$2/"
-                if [[ $PUBLISH_TEST_MODE == corrupt ]]; then printf 'changed\n' >> "$2/provider_core-0.2.0-release.json"; fi
+                if [[ $PUBLISH_TEST_MODE == corrupt ]]; then printf 'changed\n' >> "$2/linux_idmap-0.2.0-release.json"; fi
                 exit
             fi
             shift

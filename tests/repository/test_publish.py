@@ -28,6 +28,14 @@ class PublicationTests(unittest.TestCase):
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(name, target)
+        fixture = Path("tests/fixtures/publish-tools/linux_idmap.sh")
+        shutil.copyfile(fixture, self.root / "tools/linux_idmap.sh")
+        (self.root / "tools/docker_context.sh").write_text('''select_docker_context() {
+    if [[ $PUBLISH_TEST_MODE == note-after-admission ]]; then
+        printf 'changed after admission\\n' > "$PUBLISH_TEST_WORKTREE_NOTE"
+    fi
+}
+''')
         self.note = self.root / "notes/005_release_v0.2.0.md"
         self.note.parent.mkdir()
         self.note.write_text("# Authored fixture release\n\nThe reader-facing change.\n")
@@ -36,12 +44,11 @@ class PublicationTests(unittest.TestCase):
         artifacts = self.inputs / "artifacts"
         artifacts.mkdir()
         contents = {
-            "provider_core-0.2.0-py3-none-any.whl": b"qualified wheel",
-            "provider_core-0.2.0.tar.gz": b"qualified source",
-            "provider_core-0.2.0-install.lock": b"qualified lock",
-            "provider_core-0.2.0-native-install.lock": b"qualified native lock",
-            "provider_core-0.2.0-release.json": json.dumps({"source_revision": "0" * 39 + "1"}).encode(),
-            "provider_core-0.2.0-sha256.json": b"{}",
+            "linux_idmap-0.2.0-py3-none-any.whl": b"qualified wheel",
+            "linux_idmap-0.2.0.tar.gz": b"qualified source",
+            "linux_idmap-0.2.0-install.lock": b"qualified lock",
+                        "linux_idmap-0.2.0-release.json": json.dumps({"source_revision": "0" * 39 + "1"}).encode(),
+            "linux_idmap-0.2.0-sha256.json": b"{}",
         }
         for name, content in contents.items():
             (artifacts / name).write_bytes(content)
@@ -49,6 +56,7 @@ class PublicationTests(unittest.TestCase):
         (self.inputs / "release-test.log").write_text(self.receipts)
         (self.inputs / "release-build.log").write_text("qualified build\n")
         shutil.copyfile(self.note, self.inputs / "release-notes.md")
+        shutil.copyfile(self.note, self.inputs / "committed-note.md")
         self.trace = self.root / "calls"
         self.bin = Path("tests/fixtures/publish-tools").resolve()
 
@@ -60,6 +68,8 @@ class PublicationTests(unittest.TestCase):
                  "ARTIFACTS_INPUT_ORIGIN": "command line", "ARTIFACTS_INPUT": str(self.inputs),
                  "OUTPUT_INPUT_ORIGIN": "command line", "OUTPUT_INPUT": str(self.root / "prepared"),
                  "WHEELHOUSE_INPUT_ORIGIN": "command line", "WHEELHOUSE_INPUT": str(self.root / "pool"),
+                 "PUBLISH_TEST_COMMITTED_NOTE": str(self.inputs / "committed-note.md"),
+                 "PUBLISH_TEST_WORKTREE_NOTE": str(self.note),
                  "PUBLISH_TEST_MODE": scenario, "PUBLISH_TEST_TRACE": str(self.trace)},
             capture_output=True, text=True, timeout=15, check=False,
         )
@@ -70,8 +80,66 @@ class PublicationTests(unittest.TestCase):
         result = self.run_publisher("publish", "prepare")
         self.assertEqual(0, result.returncode, msg=result.stderr)
         self.assertEqual(self.note.read_bytes(), (self.root / "prepared/release-notes.md").read_bytes())
-        self.assertEqual(6, len(list((self.root / "prepared/artifacts").iterdir())))
+        self.assertEqual(5, len(list((self.root / "prepared/artifacts").iterdir())))
         self.assertNotIn("gh ", self.trace.read_text())
+
+    def test_missing_duplicate_or_symlinked_authored_note_blocks_preparation(self):
+        for scenario in ("missing", "duplicate", "symlink"):
+            with self.subTest(scenario=scenario):
+                if scenario == "missing":
+                    self.note.unlink()
+                elif scenario == "duplicate":
+                    duplicate = self.note.with_name("006_release_v0.2.0.md")
+                    duplicate.write_text("second note\n")
+                else:
+                    self.note.unlink()
+                    self.note.symlink_to(self.inputs / "release-notes.md")
+                result = self.run_publisher("publish", "prepare")
+                self.assertEqual(2, result.returncode, msg=result.stderr)
+                self.assertIn("exactly one authored", result.stderr)
+                if self.trace.exists():
+                    self.assertNotIn("gh ", self.trace.read_text())
+                if scenario == "duplicate":
+                    duplicate.unlink()
+                else:
+                    self.note.unlink(missing_ok=True)
+                    self.note.write_text("# Authored fixture release\n\nThe reader-facing change.\n")
+
+    def test_modified_prepared_note_cannot_reach_github(self):
+        (self.inputs / "release-notes.md").write_text("changed note\n")
+        result = self.run_publisher("publish", "release")
+        self.assertEqual(2, result.returncode, msg=result.stderr)
+        self.assertIn("prose differs", result.stderr)
+        self.assertNotIn("gh ", self.trace.read_text())
+
+    def test_uncommitted_note_cannot_be_prepared_even_if_status_is_clean(self):
+        result = self.run_publisher("uncommitted-note", "prepare")
+        self.assertEqual(2, result.returncode, msg=result.stderr)
+        self.assertIn("regular file in the committed source", result.stderr)
+        self.assertNotIn("gh ", self.trace.read_text())
+
+    def test_different_or_unreadable_committed_note_cannot_be_prepared(self):
+        for scenario in ("different-committed-note", "git-show-error"):
+            with self.subTest(scenario=scenario):
+                result = self.run_publisher(scenario, "prepare")
+                self.assertEqual(2, result.returncode, msg=result.stderr)
+                self.assertIn("must match the file committed", result.stderr)
+                self.assertNotIn("gh ", self.trace.read_text())
+
+    def test_committed_symlink_cannot_supply_a_regular_worktree_note(self):
+        result = self.run_publisher("committed-symlink", "prepare")
+        self.assertEqual(2, result.returncode, msg=result.stderr)
+        self.assertIn("regular file in the committed source", result.stderr)
+        self.assertNotIn("gh ", self.trace.read_text())
+
+    def test_preparation_captures_committed_note_if_worktree_changes_after_admission(self):
+        (self.root / "prepared").mkdir(mode=0o700)
+        (self.root / "pool").mkdir()
+        result = self.run_publisher("note-after-admission", "prepare")
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        self.assertNotEqual(self.note.read_bytes(), (self.inputs / "committed-note.md").read_bytes())
+        self.assertEqual((self.inputs / "committed-note.md").read_bytes(),
+                         (self.root / "prepared/release-notes.md").read_bytes())
 
     def test_matching_url_rewrite_or_unreadable_configuration_stops_before_github(self):
         for scenario in ("matching", "config-error"):
@@ -92,8 +160,16 @@ class PublicationTests(unittest.TestCase):
                 self.assertEqual(2, result.returncode, msg=result.stderr)
                 calls = self.trace.read_text()
                 self.assertIn("gh api --hostname github.com --include", calls)
-                self.assertNotIn("refs/tags/v0.2.0:refs/tags/v0.2.0", calls)
+                self.assertNotIn(":refs/tags/v0.2.0", calls)
                 self.assertNotIn("gh release create", calls)
+
+    def test_existing_tag_at_another_commit_cannot_be_pushed(self):
+        result = self.run_publisher("wrong-tag", "release")
+        self.assertEqual(2, result.returncode, msg=result.stderr)
+        self.assertIn("existing local tag identifies another", result.stderr)
+        calls = self.trace.read_text()
+        self.assertNotIn("git push", calls)
+        self.assertNotIn("gh release create", calls)
 
     def test_duplicate_malformed_or_incomplete_receipts_never_reach_github(self):
         for receipts in (self.receipts + self.receipts.splitlines()[0] + "\n", self.receipts.replace("QUALIFIED_SHA256 ", "QUALIFIED_SHA256 broken ", 1), ""):
@@ -102,7 +178,7 @@ class PublicationTests(unittest.TestCase):
                 self.trace.unlink(missing_ok=True)
                 result = self.run_publisher("publish", "release")
                 self.assertEqual(2, result.returncode, msg=result.stderr)
-                self.assertRegex(result.stderr, "artifact receipt|artifact name|all six artifact hashes")
+                self.assertRegex(result.stderr, "artifact receipt|artifact name|all five artifact hashes")
                 self.assertNotIn("gh ", self.trace.read_text())
 
     def test_downloaded_artifact_change_leaves_the_release_draft(self):
@@ -117,7 +193,10 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=result.stderr)
         calls = self.trace.read_text()
         self.assertLess(calls.index("gh release download"), calls.index("gh release edit"))
-        self.assertEqual(8, len(list(Path(str(self.trace) + ".uploads").iterdir())))
+        self.assertIn("0" * 39 + "1:refs/tags/v0.2.0", calls)
+        self.assertEqual(7, len(list(Path(str(self.trace) + ".uploads").iterdir())))
+        self.assertEqual((self.inputs / "committed-note.md").read_bytes(),
+                         Path(str(self.trace) + ".notes").read_bytes())
         self.assertIn("--draft=false", calls)
 
     def test_unknown_native_retirement_stops_before_any_tag_or_draft_effect(self):
@@ -142,7 +221,7 @@ class PublicationTests(unittest.TestCase):
         self.assertIn("gh api --hostname github.com --include", calls)
         self.assertNotIn("continued after unknown retirement", calls)
         self.assertNotIn("gh release create", calls)
-        self.assertNotIn("refs/tags/v0.2.0:refs/tags/v0.2.0", calls)
+        self.assertNotIn(":refs/tags/v0.2.0", calls)
 
     def test_failed_git_status_cannot_be_treated_as_clean_source(self):
         result = self.run_publisher("status-error", "release")

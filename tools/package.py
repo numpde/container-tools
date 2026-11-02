@@ -11,6 +11,7 @@ require_container()
 
 import argparse
 import json
+from email.parser import BytesParser
 import re
 import shutil
 import subprocess
@@ -21,18 +22,18 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from tools.artifacts import regular_file
-from tools.core_environment import build_candidate, install_environment
-from tools.wheelhouse import capture, digest, requirements
+from tools.core_environment import build_candidate, install_environment, source_inventory
+from tools.wheelhouse import digest, requirements
 
 
 def artifact_names(version):
-    prefix = f"provider_core-{version}"
-    return {prefix + suffix for suffix in ("-py3-none-any.whl", ".tar.gz", "-install.lock", "-native-install.lock", "-release.json", "-sha256.json")}
+    prefix = f"linux_idmap-{version}"
+    return {prefix + suffix for suffix in ("-py3-none-any.whl", ".tar.gz", "-install.lock", "-release.json", "-sha256.json")}
 
 
 def unpack_source(archive, destination, version):
     """Admit the complete tar inventory before creating any extracted file."""
-    root_name = f"provider_core-{version}"
+    root_name = f"linux_idmap-{version}"
     with tarfile.open(archive, "r:gz") as source:
         members = source.getmembers()
         names = set()
@@ -61,7 +62,7 @@ def source_payload(source, inventory):
     for name, facts in inventory.items():
         path = PurePosixPath(name)
         if (path.is_absolute() or ".." in path.parts or path.as_posix() != name
-                or not (name in {"README.md", "MANIFEST.in", "pyproject.toml"} or name.startswith(("src/provider_core/", "tests/")))
+                or not (name in {"README.md", "MANIFEST.in", "pyproject.toml"} or name.startswith(("src/linux_idmap/", "tests/", "examples/")))
                 or type(facts) is not dict or set(facts) != {"sha256", "size", "mode"}):
             raise ValueError("Cannot qualify package: the recorded source inventory has unsupported entries.")
         actual = source / name
@@ -69,41 +70,56 @@ def source_payload(source, inventory):
                 or actual.stat().st_mode & 0o777 != facts["mode"]):
             raise ValueError("Cannot qualify package: source distribution differs from its pre-build source inventory.")
     generated = {"PKG-INFO", "setup.cfg"} | {
-        "src/provider_core.egg-info/" + name
-        for name in ("PKG-INFO", "SOURCES.txt", "dependency_links.txt", "requires.txt", "top_level.txt")
+        "src/linux_idmap.egg-info/" + name
+        for name in ("PKG-INFO", "SOURCES.txt", "dependency_links.txt", "entry_points.txt", "top_level.txt")
     }
     observed = {path.relative_to(source).as_posix() for path in source.rglob("*") if path.is_file()}
     if observed != set(inventory) | generated:
         raise ValueError("Cannot qualify package: source distribution has missing or unrecorded authored files.")
-    return {name.removeprefix("src/"): (source / name).read_bytes() for name in inventory if name.startswith("src/provider_core/")}
+    return {name.removeprefix("src/"): (source / name).read_bytes() for name in inventory if name.startswith("src/linux_idmap/")}
 
 
 def wheel_payload(wheel, expected, version):
     with zipfile.ZipFile(wheel) as archive:
         names = archive.namelist()
-        metadata = f"provider_core-{version}.dist-info/"
+        metadata = f"linux_idmap-{version}.dist-info/"
         if len(names) != len(set(names)) or any(not name.startswith(metadata) and name not in expected for name in names):
             raise ValueError("Cannot qualify package: wheel contains duplicate or unexpected payload files.")
         payload = {name: archive.read(name) for name in names if not name.startswith(metadata)}
         if payload != expected:
             raise ValueError("Cannot qualify package: installed wheel payload differs from its captured source files.")
-        return {name.removeprefix(metadata): archive.read(name) for name in names if name.startswith(metadata) and not name.endswith("/RECORD")}
+        details = {name.removeprefix(metadata): archive.read(name) for name in names if name.startswith(metadata) and not name.endswith("/RECORD")}
+        if "METADATA" not in details:
+            raise ValueError("Cannot qualify package: wheel is missing distribution metadata.")
+        distribution = BytesParser().parsebytes(details["METADATA"])
+        if distribution.get("Name") != "linux-idmap" or distribution.get("Version") != version or distribution.get_all("Requires-Dist"):
+            raise ValueError("Cannot qualify package: wheel metadata differs from the dependency-free release.")
+        if details.get("entry_points.txt") != b"[console_scripts]\nlinux-idmap-probe = linux_idmap._cli:main\n":
+            raise ValueError("Cannot qualify package: wheel console entrypoint differs from the declared CLI.")
+        return details
 
 
-def qualify_installed(wheel, lock, source, pool, root, suites):
-    selected_pool = root / "pool"
-    selected_pool.mkdir(parents=True)
-    capture(Path("/core-runtime.lock"), pool, selected_pool)
-    with regular_file(wheel) as reader, (selected_pool / wheel.name).open("xb") as writer:
+def qualify_installed(wheel, lock, source, root):
+    pool = root / "pool"
+    pool.mkdir(parents=True)
+    with regular_file(wheel) as reader, (pool / wheel.name).open("xb") as writer:
         shutil.copyfileobj(reader, writer)
-    python = install_environment(root / "runtime", lock, selected_pool)
-    test_root = root / "run"
-    shutil.copytree(source / "tests", test_root / "tests")
-    for suite in suites:
-        subprocess.run([str(python), "-I", "-B", str(test_root / "tests/run_suite.py"), suite, "test*.py"], cwd=test_root, check=True)
+    python = install_environment(root / "runtime", lock, pool)
+    run = root / "run"
+    shutil.copytree(source / "tests", run / "tests")
+    shutil.copytree(source / "examples", run / "examples")
+    subprocess.run([str(python), "-I", "-B", "-c",
+                    "import pathlib,sys,linux_idmap; pathlib.Path(linux_idmap.__file__).resolve().relative_to(pathlib.Path(sys.prefix).resolve())"],
+                   cwd=run, check=True)
+    cli = subprocess.run([str(python.parent / "linux-idmap-probe"), "--help"], cwd=run,
+                         capture_output=True, text=True, check=True)
+    if "--endpoint" not in cli.stdout:
+        raise ValueError("Cannot qualify package: installed CLI help does not expose its endpoint argument.")
+    subprocess.run([str(python), "-I", "-B", "-m", "unittest", "discover", "-s", "tests", "-p", "test*.py", "-v"],
+                   cwd=run, check=True)
 
 
-def check(artifacts, revision):
+def check(artifacts, revision, committed_source):
     with tempfile.TemporaryDirectory(prefix="package-proof-") as temporary:
         scratch = Path(temporary)
         captured = scratch / "artifacts"
@@ -113,14 +129,14 @@ def check(artifacts, revision):
                 shutil.copyfileobj(reader, writer)
         wheels = list(captured.glob("*.whl"))
         if len(wheels) != 1:
-            raise ValueError("Cannot qualify package: expect exactly one provider-core wheel.")
-        match = re.fullmatch(r"provider_core-((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))-py3-none-any.whl", wheels[0].name)
+            raise ValueError("Cannot qualify package: expect exactly one linux-idmap wheel.")
+        match = re.fullmatch(r"linux_idmap-((?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*))-py3-none-any.whl", wheels[0].name)
         if match is None:
-            raise ValueError("Cannot qualify package: wheel name must identify a provider-core release version.")
+            raise ValueError("Cannot qualify package: wheel name must identify a linux-idmap release version.")
         version = match[1]
-        prefix = f"provider_core-{version}"
+        prefix = f"linux_idmap-{version}"
         if {path.name for path in captured.iterdir()} != artifact_names(version):
-            raise ValueError("Cannot qualify package: expect exactly the six declared release artifacts.")
+            raise ValueError("Cannot qualify package: expect exactly the five declared release artifacts.")
         manifest = json.loads((captured / (prefix + "-sha256.json")).read_text())
         expected = {path.name: digest(path) for path in captured.iterdir() if not path.name.endswith("-sha256.json")}
         if manifest != expected:
@@ -128,30 +144,29 @@ def check(artifacts, revision):
         record = json.loads((captured / (prefix + "-release.json")).read_text())
         if record["source_revision"] != revision or record["files"] != {name: value for name, value in expected.items() if not name.endswith("-release.json")}:
             raise ValueError("Cannot qualify package: source revision or recorded artifact identities differ from this release.")
-        source = unpack_source(captured / (prefix + ".tar.gz"), scratch / "source", version)
+        if record["source_files"] != source_inventory(committed_source):
+            raise ValueError("Cannot qualify package: recorded source differs from the captured commit.")
+        runtime = Path("/runtime/package-proof")
+        runtime.mkdir()
+        source = unpack_source(captured / (prefix + ".tar.gz"), runtime / "source", version)
         document = tomllib.loads((source / "pyproject.toml").read_text())
-        if document["project"]["name"] != "provider-core" or document["project"]["version"] != version:
+        if (document["project"]["name"] != "linux-idmap" or document["project"]["version"] != version
+                or document["project"]["dependencies"] != []):
             raise ValueError("Cannot qualify package: source project and version differ from the release artifacts.")
         payload = source_payload(source, record["source_files"])
         original_metadata = wheel_payload(wheels[0], payload, version)
         lock = captured / (prefix + "-install.lock")
-        if requirements(lock) != requirements(Path("/core-runtime.lock")) | {("provider-core", version): {digest(wheels[0])}}:
-            raise ValueError("Cannot qualify package: issued install lock differs from the closed runtime dependencies and wheel.")
-        native_lock = captured / (prefix + "-native-install.lock")
-        if requirements(native_lock) != {("provider-core", version): {digest(wheels[0])}}:
-            raise ValueError("Cannot qualify package: native install lock differs from the same released wheel.")
+        if requirements(lock) != {("linux-idmap", version): {digest(wheels[0])}}:
+            raise ValueError("Cannot qualify package: install lock differs from the released wheel.")
         rebuilt = scratch / "rebuilt"
         rebuilt.mkdir()
         rebuilt_wheel, rebuilt_lock, identities = build_candidate(
-            source, Path("/core-runtime.lock"), Path("/core-build.lock"), Path("/wheelhouse"), rebuilt,
+            source, Path("/idmap-build.lock"), Path("/wheelhouse"), rebuilt,
         )
         if identities != record["dependency_inputs"] or wheel_payload(rebuilt_wheel, payload, version) != original_metadata:
             raise ValueError("Cannot qualify package: source rebuild metadata or dependency inputs differ from the original wheel.")
-        runtime = Path("/runtime/package-proof")
-        runtime.mkdir()
-        qualify_installed(wheels[0], lock, source, Path("/wheelhouse"), runtime / "original", ("unit", "contract", "integration"))
-        qualify_installed(rebuilt_wheel, rebuilt_lock, source, Path("/wheelhouse"), runtime / "rebuilt", ("contract",))
-        qualify_installed(wheels[0], native_lock, source, Path("/wheelhouse"), runtime / "native", ("native",))
+        qualify_installed(wheels[0], lock, source, runtime / "original")
+        qualify_installed(rebuilt_wheel, rebuilt_lock, source, runtime / "rebuilt")
         for path in sorted(captured.iterdir()):
             print("QUALIFIED_SHA256", digest(path), path.name, flush=True)
 
@@ -160,5 +175,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--artifacts", type=Path, required=True)
     parser.add_argument("--revision", required=True)
+    parser.add_argument("--source", type=Path, required=True)
     args = parser.parse_args()
-    check(args.artifacts, args.revision)
+    check(args.artifacts, args.revision, args.source)
