@@ -289,8 +289,8 @@
     },
     {
       "source": "repository_checks/test_scientific_lint.py",
-      "disposition": "ported",
-      "reason": "See port-sources.json for exact donor bytes and local target."
+      "disposition": "no-current-consumer",
+      "reason": "Scientific provider code is outside the standalone linux-idmap repository."
     },
     {
       "source": "repository_checks/test_scientific_product_contract.py",

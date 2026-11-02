@@ -27,31 +27,26 @@
   {
     "target": "tests/repository/quality/test_source_inventory.py",
     "method": "test_container_source_inventory_is_exact_and_fully_classified",
-    "disposition": "The donor checks target its Compose build inventory. This repository builds checker and delivery images directly; local provisioning, image-source, launcher-grant and deployment checks own those boundaries."
+    "disposition": "The donor checks target its Compose build inventory. This repository builds one checker image; local provisioning and launcher-grant checks own that boundary."
   },
   {
     "target": "tests/repository/quality/test_source_inventory.py",
     "method": "test_container_sources_keep_original_generic_hardening",
-    "disposition": "The donor checks target its Compose build inventory. This repository builds checker and delivery images directly; local provisioning, image-source, launcher-grant and deployment checks own those boundaries."
+    "disposition": "The donor checks target its Compose build inventory. This repository builds one checker image; local provisioning and launcher-grant checks own that boundary."
   },
   {
     "target": "tests/repository/quality/test_source_inventory.py",
     "method": "test_inventory_authorities_are_independent_of_discovery",
-    "disposition": "The donor checks target its Compose build inventory. This repository builds checker and delivery images directly; local provisioning, image-source, launcher-grant and deployment checks own those boundaries."
+    "disposition": "The donor checks target its Compose build inventory. This repository builds one checker image; local provisioning and launcher-grant checks own that boundary."
   },
   {
     "target": "tests/repository/quality/test_source_inventory.py",
     "method": "test_expected_source_inventory_is_json_serializable",
-    "disposition": "The donor checks target its Compose build inventory. This repository builds checker and delivery images directly; local provisioning, image-source, launcher-grant and deployment checks own those boundaries."
+    "disposition": "The donor checks target its Compose build inventory. This repository builds one checker image; local provisioning and launcher-grant checks own that boundary."
   },
   {
-    "target": "tests/repository/test_scientific_lint.py",
-    "method": "test_full_selected_ruff_rule_policy",
-    "disposition": "User assigns Ruff to the separate ruffer repository. Local custom import-order checks remain."
-  },
-  {
-    "target": "tests/repository/test_scientific_lint.py",
-    "method": "test_ruff_format_policy",
-    "disposition": "User assigns Ruff to the separate ruffer repository. Local custom import-order checks remain."
+    "target": "tests/repository/test_conventions.py",
+    "method": "test_installed_core_requires_its_own_portable_guard",
+    "disposition": "The standalone package is intentionally runnable on the host; provider-core is outside this repository."
   }
 ]

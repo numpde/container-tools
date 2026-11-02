@@ -139,19 +139,17 @@ class LauncherTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, msg=result.stderr)
             self.assertEqual(["inspect"], log.read_text().splitlines())
 
-    def test_compound_prepare_reuses_the_original_context_endpoint(self):
+    def test_make_passes_selected_endpoint_to_checker_prepare(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(ROOT / "tools", root / "tools")
             shutil.copyfile(ROOT / "Makefile", root / "Makefile")
-            (root / "pool").mkdir()
-            (root / "tools/delivery_cache_check.sh").write_text("printf 'complete\\n'\n")
-            (root / "tools/delivery_image.sh").write_text("printf 'selected=%s\\n' \"$NMR_SELECTED_DOCKER_ENDPOINT\"\n")
+            (root / "tools/checker.sh").write_text('printf "selected=%s\\n" "$NMR_SELECTED_DOCKER_ENDPOINT"\n')
             log = root / "context-inspections"
             fixture = ROOT / "tests/repository/fixtures/docker-context"
             env = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}", "FAKE_CONTEXT_LOG": str(log)}
             result = subprocess.run(
-                ["make", "--no-print-directory", "delivery/prepare", f"WHEELHOUSE={root / 'pool'}", "DOCKER_CONTEXT=local-test"],
+                ["make", "--no-print-directory", "checks/prepare", "DOCKER_CONTEXT=local-test"],
                 cwd=root, env=env, capture_output=True, text=True, check=False,
             )
             self.assertEqual(0, result.returncode, msg=result.stderr)

@@ -53,7 +53,7 @@ class DockerContextPostureTests(unittest.TestCase):
         self.assertEqual([], implicit_defaults('# Run make test DOCKER_CONTEXT=default'))
 
     def test_runtime_sources_do_not_force_default(self):
-        roots = (ROOT / "tools", ROOT / "packages/provider-core/src", ROOT / "containers")
+        roots = (ROOT / "tools", ROOT / "packages/linux-idmap/src", ROOT / "containers")
         paths = [ROOT / "Makefile"]
         paths.extend(path for root in roots for path in root.rglob("*")
                      if path.is_file() and (path.suffix in (".sh", ".py") or path.name == "Dockerfile"))

@@ -22,7 +22,7 @@
 # inference_diagnostic returns controlled wrapper text, not cleanup authority.
 # Consume it before another call resets it: callers finish permitted quiet
 # cleanup, then report through their held owner. A terminal reporter failure
-# exits without retry/direct fallback; delivery can fail during bootstrap.
+# exits without retry or direct fallback.
 # Setup, receipt and removal failures return controlled diagnostics without
 # utility stderr delaying caller cleanup. The stdio client keeps its streams;
 # filesystem hangs and unconfirmed retirement remain separate limits.
