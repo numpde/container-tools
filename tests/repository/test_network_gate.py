@@ -68,17 +68,18 @@ class NetworkGateTests(unittest.TestCase):
             mounts = [command[i + 1] for i, arg in enumerate(command) if arg == "--mount"]
             self.assertFalse(any("docker.sock" in mount or "dst=/home" in mount for mount in mounts))
         self.assertIn("python3", proxy)
-        self.assertEqual("provider_core.bound_http_proxy", proxy[proxy.index("-m") + 1])
+        self.assertEqual("tools.bound_http_proxy", proxy[proxy.index("-m") + 1])
         self.assertEqual("/workspace", proxy[proxy.index("--workdir") + 1])
         proxy_mounts = [proxy[i + 1] for i, arg in enumerate(proxy) if arg == "--mount"]
-        self.assertEqual(
-            {
-                f"type=bind,src={Path.cwd()}/packages/provider-core/src/provider_core/bound_http_proxy.py,dst=/workspace/provider_core/bound_http_proxy.py,readonly",
-                f"type=bind,src={Path.cwd()}/packages/provider-core/src/provider_core/container_guard.py,dst=/workspace/provider_core/container_guard.py,readonly",
-                "type=bind,src=/tmp/nmrnet-proxy.PRINT/ready,dst=/ready",
-            },
-            set(proxy_mounts),
-        )
+        expected_mounts = {
+            f"type=bind,src={Path.cwd()}/tools/bound_http_proxy.py,dst=/workspace/tools/bound_http_proxy.py,readonly",
+            f"type=bind,src={Path.cwd()}/tools/container_guard.py,dst=/workspace/tools/container_guard.py,readonly",
+            "type=bind,src=/tmp/nmrnet-proxy.PRINT/ready,dst=/ready",
+        }
+        resolver = Path("/run/systemd/resolve/resolv.conf")
+        if resolver.exists():
+            expected_mounts.add(f"type=bind,src={resolver},dst={resolver},readonly")
+        self.assertEqual(expected_mounts, set(proxy_mounts))
         self.assertIn("type=bind,src=/tmp/nmrnet-proxy.PRINT/ready,dst=/ready", proxy)
         self.assertNotIn("type=bind,src=/tmp/nmrnet-proxy.PRINT,dst=/ready", proxy)
         self.assertEqual("lo", proxy[proxy.index("--interface") + 1])
