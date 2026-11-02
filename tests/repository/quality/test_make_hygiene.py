@@ -105,10 +105,10 @@ class RepositoryHygieneTest(unittest.TestCase):
                 self.assertRegex(target, r"^[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)+$")
 
     def test_make_test_scopes_run_their_supported_campaigns(self) -> None:
-        # The public aggregate covers repository checks and every installed-core lane.
+        # The public aggregate covers repository checks and the linux-idmap suite.
         makefile = read_text(repo_path("Makefile"))
         self.assertEqual(
-            ("tests/repository", "tests/unit/provider-core", "tests/contract/provider-core", "tests/integration/provider-core", "tests/deployment"),
+            ("tests/repository", "tests/unit/linux-idmap"),
             self.make_target_prereqs(makefile, "tests"),
         )
         self.assertEqual("", self.make_target_recipe(makefile, "tests").strip())
