@@ -92,6 +92,6 @@ and substituted host/socket checks explicitly.
 
 Rootful/rootless engines, both actual image interpreters, non-root host callers,
 and each provider's maintained container test lane must pass before adoption.
-The shared probe standardizes finite resource caps; verify them with both images
-rather than assuming identical interpreter startup behavior. Local candidate
+The shared probe has finite time bounds but does not set CPU, memory or PID
+limits. Verify interpreter startup behavior with both images. Local candidate
 adapters and fake-engine tests are not production migration or qualification.
