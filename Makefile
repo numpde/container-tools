@@ -5,7 +5,7 @@ override .DEFAULT_GOAL := help
 unexport DOCKER_CONTEXT
 unexport DOCKER_CONTEXT_INPUT
 unexport DOCKER_CONTEXT_INPUT_ORIGIN
-unexport NMR_SELECTED_DOCKER_ENDPOINT
+unexport CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT
 override export DOCKER_CONTEXT_INPUT_ORIGIN := $(origin DOCKER_CONTEXT)
 ifeq ($(origin DOCKER_CONTEXT),command line)
 override DOCKER_CONTEXT_INPUT := $(value DOCKER_CONTEXT)
@@ -17,11 +17,11 @@ endif
 ifneq ($(strip $(filter-out help publish/release,$(MAKECMDGOALS))),)
 ifeq ($(origin DOCKER_CONTEXT),command line)
 docker_context_quote = '$(subst ','"'"',$(1))'
-override export NMR_SELECTED_DOCKER_ENDPOINT := $(shell env -u NMR_SELECTED_DOCKER_ENDPOINT -u DOCKER_CONTEXT_INPUT -u DOCKER_CONTEXT_INPUT_ORIGIN DOCKER_CONTEXT_INPUT_ORIGIN='command line' DOCKER_CONTEXT_INPUT=$(call docker_context_quote,$(value DOCKER_CONTEXT)) bash tools/docker_context.sh --endpoint)
+override export CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT := $(shell env -u CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT -u DOCKER_CONTEXT_INPUT -u DOCKER_CONTEXT_INPUT_ORIGIN DOCKER_CONTEXT_INPUT_ORIGIN='command line' DOCKER_CONTEXT_INPUT=$(call docker_context_quote,$(value DOCKER_CONTEXT)) bash tools/docker_context.sh --endpoint)
 else
-override export NMR_SELECTED_DOCKER_ENDPOINT := $(shell env -u NMR_SELECTED_DOCKER_ENDPOINT -u DOCKER_CONTEXT_INPUT -u DOCKER_CONTEXT_INPUT_ORIGIN bash tools/docker_context.sh --endpoint)
+override export CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT := $(shell env -u CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT -u DOCKER_CONTEXT_INPUT -u DOCKER_CONTEXT_INPUT_ORIGIN bash tools/docker_context.sh --endpoint)
 endif
-ifeq ($(strip $(NMR_SELECTED_DOCKER_ENDPOINT)),)
+ifeq ($(strip $(CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT)),)
 $(error Select a local Docker context for this operation)
 endif
 endif

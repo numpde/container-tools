@@ -46,7 +46,7 @@ checker_host_identity() { checker_host_uid=0; checker_host_gid=0; }
 """)
         (self.root / "tools/docker.sh").write_text(
             'printf "%s\\0" "$@" > "$PROVISION_ARGUMENTS"\n'
-            'printf "%s" "$NMR_SELECTED_DOCKER_ENDPOINT" > "$PROVISION_ARGUMENTS.endpoint"\n'
+            'printf "%s" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT" > "$PROVISION_ARGUMENTS.endpoint"\n'
         )
         cache = self.root / "cache $literal 'quoted'"
         result = self.invoke_make("checks/dependencies/download", wheelhouse=str(cache), interface="lo")
@@ -55,7 +55,7 @@ checker_host_identity() { checker_host_uid=0; checker_host_gid=0; }
         self.assertEqual("unix:///tmp/selected-default.sock", Path(f"{self.record}.endpoint").read_text())
         self.assertEqual(["run", "--proxy-user", "0:0"], arguments[:3])
         self.assertIn(f"type=bind,src={cache},dst=/wheelhouse", arguments)
-        self.assertIn("NMR_PROVIDER_TOOLS_IN_CONTAINER=1", arguments)
+        self.assertIn("CONTAINER_TOOLS_IN_CONTAINER=1", arguments)
         for flag, value in (("--pull", "never"), ("--user", "0:0"), ("--cap-drop", "ALL"),
                             ("--security-opt", "no-new-privileges:true"), ("--memory", "512m"),
                             ("--memory-swap", "512m"), ("--cpus", "2"), ("--pids-limit", "64")):

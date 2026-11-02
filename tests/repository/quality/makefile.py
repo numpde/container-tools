@@ -1,4 +1,3 @@
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/_makefile.py
 # Original recipe parsing and exact direct-owner inventory semantics retained.
 """Narrow source inspection for literal Make recipes in repository checks."""
 

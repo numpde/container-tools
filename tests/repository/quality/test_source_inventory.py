@@ -9,7 +9,6 @@ from tools.container_guard import require_container
 
 require_container()
 
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/test_source_inventory.py
 # The four original discovery/error fixture scenarios are retained. Container exact inventory,
 # independent authority and deterministic diagnostic serialization retained.
 # There are no checked-in Compose service/build files. Generated runtime recipes
@@ -243,7 +242,7 @@ class SourceInventoryRepositoryTests(unittest.TestCase):
 
     def test_repository_checker_grants_complete_read_only_source_trees(self):
         result = subprocess.run(
-            ["env", "NMR_SELECTED_DOCKER_ENDPOINT=unix:///var/run/docker.sock", "DOCKER_CONTEXT_INPUT_ORIGIN=command line", "DOCKER_CONTEXT_INPUT=default", "bash", str(ROOT / "tools/repository.sh"), "--print", "tests/repository"], text=True, capture_output=True, check=True
+            ["env", "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT=unix:///var/run/docker.sock", "DOCKER_CONTEXT_INPUT_ORIGIN=command line", "DOCKER_CONTEXT_INPUT=generic", "bash", str(ROOT / "tools/repository.sh"), "--print", "tests/repository"], text=True, capture_output=True, check=True
         )
         arguments = shlex.split(result.stdout)
         mounts = [arguments[index + 1] for index, value in enumerate(arguments) if value == "--mount"]

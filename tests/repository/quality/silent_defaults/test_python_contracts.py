@@ -50,8 +50,8 @@ class PythonContractApplicabilityTests(unittest.TestCase):
 
     def test_comparison_predicates_do_not_default_create_fault_inputs(self):
         sources = (
-            'if "NMRNET_FAKE_CREATE_OUTPUT" not in os.environ or os.environ["NMRNET_FAKE_CREATE_OUTPUT"] not in {\n    "exact",\n    "empty",\n    "disagree",\n    "nul",\n    "cap",\n}:\n    raise SystemExit(97)\n',
-            'if (\n    "NMRNET_FAKE_CREATE_STATUS" not in os.environ\n    or re.fullmatch(r"0|[1-9][0-9]{0,2}", os.environ["NMRNET_FAKE_CREATE_STATUS"]) is None\n    or int(os.environ["NMRNET_FAKE_CREATE_STATUS"]) > 255\n):\n    raise SystemExit(97)\n',
+            'if "FIXTURE_CREATE_OUTPUT" not in os.environ or os.environ["FIXTURE_CREATE_OUTPUT"] not in {\n    "exact",\n    "empty",\n    "disagree",\n    "nul",\n    "cap",\n}:\n    raise SystemExit(97)\n',
+            'if (\n    "FIXTURE_CREATE_STATUS" not in os.environ\n    or re.fullmatch(r"0|[1-9][0-9]{0,2}", os.environ["FIXTURE_CREATE_STATUS"]) is None\n    or int(os.environ["FIXTURE_CREATE_STATUS"]) > 255\n):\n    raise SystemExit(97)\n',
         )
         for source in sources:
             with self.subTest(source=source):

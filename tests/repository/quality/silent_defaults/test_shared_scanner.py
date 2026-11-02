@@ -1,5 +1,5 @@
 # Port source: https://github.com/numpde/dapp32/blob/778c16f8d8b77181d2ac4cd11a62a2034ded2518/tests/checks/silent_defaults/test_shared_scanner.py
-# Original detector semantics and fixtures retained; inventories use authored NMRNet paths.
+# Original detector semantics and fixtures retained; inventories use authored donor paths.
 from __future__ import annotations
 
 from tools.container_guard import require_container
@@ -76,7 +76,7 @@ class SharedScannerTest(unittest.TestCase):
         self.assertEqual([], repo_files(("tests/repository/quality/silent_defaults/*.py",)))
 
     def test_repo_files_excludes_skipped_dependency_material(self) -> None:
-        self.assertEqual([], repo_files(("NMRNetplusplus/node_modules/**/*.ts",)))
+        self.assertEqual([], repo_files(("fixture-project/node_modules/**/*.ts",)))
 
     def test_line_findings_reports_relative_paths_and_skips_comments(self) -> None:
         path = Path(__file__).resolve()

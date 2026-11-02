@@ -112,7 +112,7 @@ fi
 private_directory "$ARTIFACTS_INPUT"
 publication_inputs=$ARTIFACTS_INPUT
 umask 077
-scratch=$(mktemp -d -t nmr-provider-publication.XXXXXXXX)
+scratch=$(mktemp -d -t container-tools-publication.XXXXXXXX)
 mkdir -m 700 -- "$scratch/assets"
 for name in "${names[@]}"; do
     native 'capture qualified artifact' 30 cp --no-dereference -- "$publication_inputs/artifacts/$name" "$scratch/assets/$name"

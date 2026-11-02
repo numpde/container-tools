@@ -312,7 +312,7 @@ else
         pending_diagnostic+=$docker_client_diagnostic
         exit "$preparation_status"
     fi
-    scratch="$(mktemp -d /tmp/nmrnet-proxy.XXXXXXXX)"
+    scratch="$(mktemp -d /tmp/container-tools-proxy.XXXXXXXX)"
 fi
 if [[ "$operation" == require-images ]]; then require_images "$@"; exit; fi
 if [[ "$operation" == download-proxy ]]; then
@@ -333,13 +333,13 @@ if [[ "$operation" == download-proxy ]]; then
     fi
     exit "$download_status"
 fi
-if "$print_command"; then scratch=/tmp/nmrnet-proxy.PRINT; else
+if "$print_command"; then scratch=/tmp/container-tools-proxy.PRINT; else
     require_images "$proxy_image"
     mkdir -m 700 -- "$scratch/ready"
 fi
 # The proxy shares the tools namespace with its guard; neither source is writable.
 proxy=("${engine[@]}" create --cidfile "$scratch/proxy.cid" --pull never --network host --read-only
-    --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1 --workdir /workspace
+    --env CONTAINER_TOOLS_IN_CONTAINER=1 --workdir /workspace
     --user "$proxy_uid:$proxy_gid" --cap-drop ALL --security-opt no-new-privileges:true
     --cpus 1 --memory 128m --memory-swap 128m --pids-limit 64
     --tmpfs /tmp:rw,nosuid,nodev,noexec,size=16m

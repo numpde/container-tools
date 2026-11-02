@@ -1,4 +1,3 @@
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/_source_inventory.py
 # Complete original discovery, structural rejection and exact inventory semantics.
 """Exact source-tree discovery for repository posture checks."""
 

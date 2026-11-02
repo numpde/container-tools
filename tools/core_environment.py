@@ -1,7 +1,6 @@
 """Build the shared wheel and install its closed hash lock without networking.
 
-The pip transaction follows nmrnet-repro d09b77b tools/core_environment.py and
-provider_core_tests.py. Consumers install the issued wheel; only this owner
+Consumers install the issued wheel; only this owner
 builds it. A fixed ZIP epoch makes equal source bytes produce equal wheel bytes.
 """
 

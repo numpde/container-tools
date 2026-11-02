@@ -28,11 +28,11 @@ docker_client_prepare() {
         return 2
     fi
     local mode=$1 preparation_status config receipt endpoint
-    if [[ ! -v NMR_SELECTED_DOCKER_ENDPOINT ]]; then
+    if [[ ! -v CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT ]]; then
         source "$(dirname -- "${BASH_SOURCE[0]}")/docker_context.sh"
         select_docker_context || { docker_client_diagnostic=$'Cannot select a local Docker context.\n'; return 2; }
     fi
-    endpoint=$NMR_SELECTED_DOCKER_ENDPOINT
+    endpoint=$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT
     if [[ $endpoint != unix:///* || $endpoint =~ [[:cntrl:]] ]]; then
         docker_client_diagnostic=$'Cannot use a nonlocal Docker endpoint.\n'
         return 2
@@ -40,10 +40,10 @@ docker_client_prepare() {
     case "$mode" in
         print)
             docker_client_directory=
-            config=/tmp/nmrnet-docker-client.PRINT/config
+            config=/tmp/container-tools-docker-client.PRINT/config
             ;;
         run)
-            if { docker_client_directory=$(umask 077; mktemp -d /tmp/nmrnet-docker-client.XXXXXXXX); } 2>/dev/null; then :; else
+            if { docker_client_directory=$(umask 077; mktemp -d /tmp/container-tools-docker-client.XXXXXXXX); } 2>/dev/null; then :; else
                 preparation_status=$?
                 # Failed output never admits a path for caller cleanup.
                 docker_client_directory=

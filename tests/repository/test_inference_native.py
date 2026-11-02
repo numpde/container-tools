@@ -440,7 +440,7 @@ class CapturedNativeTests(unittest.TestCase):
         return result
 
     def retain_cleanup(self, stderr):
-        for name in re.findall(r"/tmp/nmrnet-inference-native\.[A-Za-z0-9]+", stderr):
+        for name in re.findall(r"/tmp/container-tools-inference-native\.[A-Za-z0-9]+", stderr):
             self.addCleanup(subprocess.run, ["/bin/rm", "-rf", "--", name], check=True)
 
     def assert_retired(self, identifier):
@@ -648,7 +648,7 @@ class CapturedNativeTests(unittest.TestCase):
 
     def test_early_known_and_unknown_failures_reset_outcome_without_dispatch(self):
         source = self.helper.read_text()
-        creation = "scratch=$(umask 077; mktemp -d /tmp/nmrnet-inference-native.XXXXXXXX 2>/dev/null)"
+        creation = "scratch=$(umask 077; mktemp -d /tmp/container-tools-inference-native.XXXXXXXX 2>/dev/null)"
         self.assertEqual(1, source.count(creation))
         for mode in ("discard", "stdio"):
             for early, status, fact in ((True, 28, "true"), (False, 1, "false")):
@@ -916,7 +916,7 @@ class CapturedNativeTests(unittest.TestCase):
 
     def test_setup_before_birth_and_post_retirement_cleanup_have_separate_facts(self):
         source = self.helper.read_text()
-        creation = "scratch=$(umask 077; mktemp -d /tmp/nmrnet-inference-native.XXXXXXXX 2>/dev/null)"
+        creation = "scratch=$(umask 077; mktemp -d /tmp/container-tools-inference-native.XXXXXXXX 2>/dev/null)"
         self.assertEqual(1, source.count(creation))
         self.helper.write_text(source.replace(creation, "scratch=$(exit 28)", 1))
         result, fact = self.run_fact(budget="untimed")
@@ -1312,7 +1312,7 @@ class CapturedNativeTests(unittest.TestCase):
         self.retain_cleanup(text)
         self.assertNotIn("poison", text)
         self.assertIn("native client exited with status 7", text)
-        match = re.search(r"retained at (/tmp/nmrnet-inference-native\.[A-Za-z0-9]+/command\.log)", text)
+        match = re.search(r"retained at (/tmp/container-tools-inference-native\.[A-Za-z0-9]+/command\.log)", text)
         self.assertIsNotNone(match, msg=text)
         self.assertEqual(b"stdout\0\r\nstderr\0\r\n", Path(match.group(1)).read_bytes())
         self.assertEqual(b"", reset.read_bytes())

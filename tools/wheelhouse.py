@@ -1,7 +1,6 @@
 """Select and freeze hash-locked wheels from one additive shared pool.
 
-Ported from nmrnet-repro d09b77b951551c977e36bc87b5822315a4d1e944,
-tools/wheelhouse.py. Scientific source handling stays with its provider.
+Scientific source handling stays with its provider.
 """
 
 from tools.container_guard import require_container

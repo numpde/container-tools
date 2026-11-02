@@ -24,7 +24,6 @@ engine, token, and container before retrying.
 The Python and repository test suites have been exercised, including package
 qualification on a rootless Docker engine. This qualification does not establish
 image-probe behavior on the intended rootful and rootless engines and provider
-images. NMRPeak and NMRNet adapter patches in this repository are
-historical candidates, not released integrations.
+images.
 
 Installation and usage are documented in the package README.

@@ -1,4 +1,3 @@
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/test_workflow_posture.py
 # Preserve workflow safety; local CI existence follows the reviewed inventory.
 """Repository checks for GitHub workflow source posture.
 

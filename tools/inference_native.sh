@@ -73,7 +73,7 @@ native_client() {
             return 2
             ;;
     esac
-    if scratch=$(umask 077; mktemp -d /tmp/nmrnet-inference-native.XXXXXXXX 2>/dev/null); then :; else
+    if scratch=$(umask 077; mktemp -d /tmp/container-tools-inference-native.XXXXXXXX 2>/dev/null); then :; else
         status=$?
         printf -v inference_diagnostic '%sCannot complete %s: private evidence directory creation failed (status %s).\n' "$inference_diagnostic" "$operation" "$status"
         return "$status"

@@ -1,12 +1,11 @@
 {
-  "repository": "https://github.com/numpde/nmrnet-repro",
   "commit": "d09b77b951551c977e36bc87b5822315a4d1e944",
   "files": [
     {
       "source": "repository_checks/quality/__init__.py",
       "target": "tests/repository/quality/__init__.py",
       "sha256": "da4c28cf7aeb3215f131999a144b0cb9411a8239985237e8a6063c473e85082c",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": []
     },
@@ -14,7 +13,7 @@
       "source": "repository_checks/quality/makefile.py",
       "target": "tests/repository/quality/makefile.py",
       "sha256": "d1520a53f4c7ea658e431dc9c9e399702a1d76254304cad2ac1f6482db283e43",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": []
     },
@@ -22,7 +21,7 @@
       "source": "repository_checks/quality/silent_defaults/__init__.py",
       "target": "tests/repository/quality/silent_defaults/__init__.py",
       "sha256": "52ba6f1d7dc246c1bba38dc10092acf136b98dc643c2421fac8fa1d7ada56ec4",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": []
     },
@@ -30,7 +29,7 @@
       "source": "repository_checks/quality/silent_defaults/_repo_surfaces.py",
       "target": "tests/repository/quality/silent_defaults/_repo_surfaces.py",
       "sha256": "e8d818347bb17df1533236eb0677e7dfca0ba22fc5b3dd9b96d3e684ba79fb92",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": []
     },
@@ -38,7 +37,7 @@
       "source": "repository_checks/quality/silent_defaults/test_compose_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_compose_empty_defaults.py",
       "sha256": "06a9f25177a03c8fb6f485cf0c1857682fe832859de1adb8771e57c3a5ce66d2",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "ComposeEmptyDefaultsTest.test_compose_files_use_strict_interpolation_not_empty_defaults",
@@ -50,7 +49,7 @@
       "source": "repository_checks/quality/silent_defaults/test_dockerfile_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_dockerfile_empty_defaults.py",
       "sha256": "405ff6562a064eacd3f96cbc6aa4911fc6940a9720c14ecbf41645254c333c17",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "DockerfileEmptyDefaultsTest.test_docker_arg_matcher_flags_defaults",
@@ -63,7 +62,7 @@
       "source": "repository_checks/quality/silent_defaults/test_env_file_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_env_file_empty_defaults.py",
       "sha256": "89ccb0a6985c70e566c36c2ffc33979328c610e0afe52b7e506bfbcbec22917a",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "EnvFileEmptyDefaultsTest.test_env_assignment_matcher_flags_blank_assignments",
@@ -79,7 +78,7 @@
       "source": "repository_checks/quality/silent_defaults/test_make_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_make_empty_defaults.py",
       "sha256": "e0c1c2ae5d961c4e079a92fed7a84bc27ccc86cad72e45d8fd40b61e647266e4",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "MakeEmptyDefaultsTest.test_make_matcher_flags_conditional_assignment_defaults",
@@ -96,7 +95,7 @@
       "source": "repository_checks/quality/silent_defaults/test_make_origin.py",
       "target": "tests/repository/quality/silent_defaults/test_make_origin.py",
       "sha256": "a6e61fc5eb43ba09c3b36282c40420797bc29d51fbda2c57a861c90bdf6cee5d",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "MakeOriginGateTests.test_any_alternate_value_or_owner_remains_a_finding_in_both_collectors",
@@ -109,7 +108,7 @@
       "source": "repository_checks/quality/silent_defaults/test_ops.py",
       "target": "tests/repository/quality/silent_defaults/test_ops.py",
       "sha256": "c6770b556f450e07e7119504b2af5b6d3e5d77c5bb2c959bf14e4503d523faec",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "OpsSilentDefaultsTest.test_allowed_docker_defaults_match_exact_values",
@@ -127,7 +126,7 @@
       "source": "repository_checks/quality/silent_defaults/test_python.py",
       "target": "tests/repository/quality/silent_defaults/test_python.py",
       "sha256": "ec5a69a7f8e7e01089f07f06005d48ca7e0e4a77c58473c3896618ffa0373de0",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "PythonSilentDefaultsTest.test_matchers_flag_representative_python_defaults",
@@ -140,7 +139,7 @@
       "source": "repository_checks/quality/silent_defaults/test_python_contracts.py",
       "target": "tests/repository/quality/silent_defaults/test_python_contracts.py",
       "sha256": "d4a471512f6592431fa65a87213d6bfc081f7ed26fb5ede4ef99002f66846f72",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "PythonContractApplicabilityTests.test_accepting_one_candidate_preserves_unannotated_neighbouring_findings",
@@ -202,7 +201,7 @@
       "source": "repository_checks/quality/silent_defaults/test_python_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_python_empty_defaults.py",
       "sha256": "77ed2130e102104bb7fa8eb19d3214ed4a1c082ac1f6696a6e28318b29a1799a",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "PythonEmptyDefaultsTest.test_python_matcher_accepts_annotated_empty_get_defaults",
@@ -224,7 +223,7 @@
       "source": "repository_checks/quality/silent_defaults/test_shared_scanner.py",
       "target": "tests/repository/quality/silent_defaults/test_shared_scanner.py",
       "sha256": "b1df6cdc337c968830217ad1719127a0c286016b268d077f5805758850e8d5c4",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "SharedScannerTest.test_line_findings_reports_relative_paths_and_skips_comments",
@@ -236,7 +235,7 @@
       "source": "repository_checks/quality/silent_defaults/test_shell_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_shell_empty_defaults.py",
       "sha256": "fef89749b8153df93bde1ef98676e94d925107b9f1a67babac9cebf31f688ce7",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "ShellEmptyDefaultsTest.test_shell_matcher_flags_empty_default_expansion",
@@ -249,7 +248,7 @@
       "source": "repository_checks/quality/silent_defaults/test_workflow_empty_defaults.py",
       "target": "tests/repository/quality/silent_defaults/test_workflow_empty_defaults.py",
       "sha256": "0d1239307b44d977f7b70c6b7569c7418d30c86809877e7c96ed85645020cdde",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "WorkflowEmptyDefaultsTest.test_workflow_blank_env_scanner_only_flags_entries_inside_env_blocks",
@@ -262,7 +261,7 @@
       "source": "repository_checks/quality/source_inventory.py",
       "target": "tests/repository/quality/source_inventory.py",
       "sha256": "1819acf66596cb065658ec85b6a3c24720593770b1b0a85931611b91224d66de",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": []
     },
@@ -270,7 +269,7 @@
       "source": "repository_checks/quality/sources.py",
       "target": "tests/repository/quality/sources.py",
       "sha256": "d7c80306845715f27c403b96ca8ca362961f606229494619b91b54dc90809fdd",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": []
     },
@@ -278,7 +277,7 @@
       "source": "repository_checks/quality/test_assert_equal_argument_order_posture.py",
       "target": "tests/repository/quality/test_assert_equal_argument_order_posture.py",
       "sha256": "d1888387690b5d2fbfea4a0ce705dca452ab93ba93217879a06786e586a71c1c",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "AssertEqualArgumentOrderPostureTests.test_detector_flags_only_visible_expected_second_arguments",
@@ -291,7 +290,7 @@
       "source": "repository_checks/quality/test_error_transparency_posture.py",
       "target": "tests/repository/quality/test_error_transparency_posture.py",
       "sha256": "284be40b5df4a09e481ad9df0b4850830251576e96166d75534d4348eed642ac",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "ErrorTransparencyPostureTests.test_cli_projects_broad_failure_facts_instead_of_dumping_exception_text",
@@ -309,7 +308,7 @@
       "source": "repository_checks/quality/test_make_hygiene.py",
       "target": "tests/repository/quality/test_make_hygiene.py",
       "sha256": "061cee3720ff0770d9263f58a0602a89a9b7b70870b51a432d9decc92345e2ee",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt. Copied assertion message uses msg= without changing its condition.",
+      "adaptation": "Import and fixture path relocation. Copied assertion message uses msg= without changing its condition.",
       "mode": "100644",
       "test_methods": [
         "RepositoryHygieneTest.test_default_goal_accepts_one_bare_or_owned_help_assignment",
@@ -334,7 +333,7 @@
       "source": "repository_checks/quality/test_makefile.py",
       "target": "tests/repository/quality/test_makefile.py",
       "sha256": "b80e1d796f6157603615781f9672990b4347e7073d878a1f8e35b9c12c5ed50b",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "MakeHelpTests.test_literal_help_commands_name_make_targets",
@@ -357,7 +356,7 @@
       "source": "repository_checks/quality/test_python_cache_clutter.py",
       "target": "tests/repository/quality/test_python_cache_clutter.py",
       "sha256": "55fe30d0a79b65e9b77f1d6f57caac8d3237905e343c4df5f11c67451256939d",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "PythonCacheClutterTests.test_python_surfaces_do_not_contain_cache_artifacts",
@@ -368,7 +367,7 @@
       "source": "repository_checks/quality/test_repository_root_posture.py",
       "target": "tests/repository/quality/test_repository_root_posture.py",
       "sha256": "1a399ec6965ab0c0429e5c62c040f01bfac09010b8fb0c0e2baab99cf0e1540c",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "RepositoryRootPostureTests.test_check_uses_no_source_layout_repository_root_inference",
@@ -381,7 +380,7 @@
       "source": "repository_checks/quality/test_runtime_policy_posture.py",
       "target": "tests/repository/quality/test_runtime_policy_posture.py",
       "sha256": "7e5c6ff55751d65e9bbc578378686f230a1699c5b0fdccbb2a4b5ab7a0457fc8",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "RuntimePolicyPostureTests.test_detector_flags_module_scope_uppercase_direct_name_value_assignments",
@@ -395,7 +394,7 @@
       "source": "repository_checks/quality/test_source_inventory.py",
       "target": "tests/repository/quality/test_source_inventory.py",
       "sha256": "423e523157af2c7bd6b052b263f063a657cc29972e51ad5ff7fabae5ca615bfe",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "SourceInventoryRepositoryTests.test_authored_python_roots_are_complete_safe_trees",
@@ -419,7 +418,7 @@
       "source": "repository_checks/quality/test_tuple_generator_posture.py",
       "target": "tests/repository/quality/test_tuple_generator_posture.py",
       "sha256": "47c333c2f034c895a620abd46b1750303a0eb00e56425e66009bd8bfd4194d89",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "TupleGeneratorPostureTests.test_detector_flags_only_direct_comprehension_conversions",
@@ -431,7 +430,7 @@
       "source": "repository_checks/quality/test_validation_guard_posture.py",
       "target": "tests/repository/quality/test_validation_guard_posture.py",
       "sha256": "f4e77603e82855c7069564074594cc1ac34e2cb859aef2cf40b6dd79b5a15109",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation; the repository guard test is recorded under its adapted local name.",
       "mode": "100644",
       "test_methods": [
         "GuardPostureTests.test_check_implementation_has_no_findings",
@@ -439,7 +438,7 @@
         "GuardPostureTests.test_detector_flags_the_exact_inverse_optional_predicate_guard",
         "GuardPostureTests.test_detector_inverts_mixed_ordered_rejection_terms",
         "GuardPostureTests.test_mixed_ordering_renders_both_boolean_inverses",
-        "GuardPostureTests.test_nmr_api_has_no_guard_posture_findings",
+        "GuardPostureTests.test_repository_has_no_guard_posture_findings",
         "GuardPostureTests.test_split_range_rejects_unsupported_comparison_operators",
         "GuardPostureTests.test_split_range_renders_each_admitted_bound_strictness"
       ]
@@ -448,7 +447,7 @@
       "source": "repository_checks/quality/test_workflow_posture.py",
       "target": "tests/repository/quality/test_workflow_posture.py",
       "sha256": "e218cac4121bae2edbd8787ed21e4a7429b598e2adbee02d888dfd1e696271ed",
-      "adaptation": "Import and fixture path relocation; local inventory changes are recorded in notes/001_repository_check_port_20261026.txt.",
+      "adaptation": "Import and fixture path relocation.",
       "mode": "100644",
       "test_methods": [
         "WorkflowPostureTests.test_external_workflow_actions_are_commit_pinned",

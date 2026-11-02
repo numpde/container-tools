@@ -25,8 +25,8 @@ checker_fingerprint() {
 }
 
 checker_admit_image() {
-    local fingerprint=$1 tag="nmr-provider-tools/checker:$1" receipt=$operation_directory/image status
-    if checker_metadata "$receipt" image inspect --format '{{.Id}} {{index .Config.Labels "org.nmr-provider-tools.inputs"}}' "$tag"; then :; else
+    local fingerprint=$1 tag="container-tools/checker:$1" receipt=$operation_directory/image status
+    if checker_metadata "$receipt" image inspect --format '{{.Id}} {{index .Config.Labels "org.container-tools.inputs"}}' "$tag"; then :; else
         status=$?
         printf -v operation_diagnostic '%sCannot admit prepared checker %s. Run make checks/prepare with an explicit WHEELHOUSE and NETWORK_INTERFACE; inspect Docker availability if preparation already succeeded.\n' "$operation_diagnostic" "$tag"
         return "$status"

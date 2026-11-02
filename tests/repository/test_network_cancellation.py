@@ -111,7 +111,7 @@ class NetworkCancellationTests(unittest.TestCase):
                 (binary / "docker").symlink_to(Path(__file__).resolve())
                 environment = {
                     **os.environ,
-                    "NMR_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock",
+                    "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock",
                     "DOCKER_CONTEXT_INPUT_ORIGIN": "command line",
                     "DOCKER_CONTEXT_INPUT": "default",
                     "NETWORK_INTERFACE_INPUT": "lo",
@@ -175,7 +175,7 @@ class NetworkCancellationTests(unittest.TestCase):
                 (binary / "docker").symlink_to(Path(__file__).resolve())
                 environment = {
                     **os.environ,
-                    "NMR_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock",
+                    "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock",
                     "DOCKER_CONTEXT_INPUT_ORIGIN": "command line",
                     "DOCKER_CONTEXT_INPUT": "default",
                     "NETWORK_INTERFACE_INPUT": "lo",
@@ -254,7 +254,7 @@ class ContainerIdentityTests(unittest.TestCase):
             (binary / "docker").symlink_to(Path(__file__).resolve())
             environment = {
                 **os.environ,
-                "NMR_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock",
+                "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock",
                 "DOCKER_CONTEXT_INPUT_ORIGIN": "command line",
                 "DOCKER_CONTEXT_INPUT": "default",
                 "NETWORK_INTERFACE_INPUT": "lo",

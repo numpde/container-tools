@@ -5,8 +5,8 @@ select_docker_context() {
     local name endpoint listing tty_fd answer index origin
     local -a choices=() endpoints=()
     if [[ -v DOCKER_CONTEXT_INPUT_ORIGIN ]]; then origin=$DOCKER_CONTEXT_INPUT_ORIGIN; else origin=undefined; fi
-    if [[ -v NMR_SELECTED_DOCKER_ENDPOINT ]]; then
-        endpoint=$NMR_SELECTED_DOCKER_ENDPOINT
+    if [[ -v CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT ]]; then
+        endpoint=$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT
         [[ $endpoint == unix:///* && ! $endpoint =~ [[:cntrl:]] ]] || { printf '%s\n' 'Selected Docker endpoint is not a local Unix socket.' >&2; return 2; }
         return 0
     fi
@@ -56,10 +56,10 @@ select_docker_context() {
     if [[ $endpoint != unix:///* || $endpoint =~ [[:cntrl:]] ]]; then
         printf 'Docker context %q must use a local Unix socket.\n' "$name" >&2; return 2
     fi
-    export NMR_SELECTED_DOCKER_ENDPOINT=$endpoint
+    export CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT=$endpoint
 }
 if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
     [[ $# == 1 && $1 == --endpoint ]] || exit 2
     select_docker_context
-    printf '%s\n' "$NMR_SELECTED_DOCKER_ENDPOINT"
+    printf '%s\n' "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"
 fi

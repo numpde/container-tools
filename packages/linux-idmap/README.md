@@ -101,8 +101,3 @@ Runnable scripts are in [examples](examples/). From `packages/linux-idmap`:
 PYTHONPATH=src python -m unittest discover -s tests -v
 python -m pip wheel --no-deps --wheel-dir dist .
 ```
-
-Historical provider adapter patches live outside the package in `integrations/linux-idmap/`
-at the repository root. Their instructions refer to the original nmr-provider-tools repository. Their `consumers.json` pins each base commit, patch digest
-and resulting tree. Verify the digest, apply to that base in a detached worktree,
-and check `git write-tree` against the manifest.

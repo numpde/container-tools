@@ -14,7 +14,7 @@ from pathlib import Path
 class NetworkGateTests(unittest.TestCase):
     def invoke(self, interface=None, proxy_user=None):
         environment = dict(os.environ)
-        environment["NMR_SELECTED_DOCKER_ENDPOINT"] = "unix:///var/run/docker.sock"
+        environment["CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"] = "unix:///var/run/docker.sock"
         environment["DOCKER_CONTEXT_INPUT_ORIGIN"] = "command line"
         environment["DOCKER_CONTEXT_INPUT"] = "default"
         # silent-defaults: allow-pop-default -- Remove an inherited forwarded interface so omission cannot authorize routing; proof=tests/repository/test_network_gate.py::NetworkGateTests.test_networked_lanes_require_an_explicit_interface
@@ -25,7 +25,7 @@ class NetworkGateTests(unittest.TestCase):
         if interface is not None:
             environment["NETWORK_INTERFACE_INPUT"] = interface
         return subprocess.run(
-            ["bash", "tools/docker.sh", "--print", "run", "--proxy-user", proxy_user if proxy_user is not None else f"{os.getuid()}:{os.getgid()}", "--pull", "never", "--read-only", "--user", f"{os.getuid()}:{os.getgid()}", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--cpus", "2", "--memory", "512m", "--memory-swap", "512m", "--pids-limit", "64", "--env", "NMR_PROVIDER_TOOLS_IN_CONTAINER=1", "inert-image"],
+            ["bash", "tools/docker.sh", "--print", "run", "--proxy-user", proxy_user if proxy_user is not None else f"{os.getuid()}:{os.getgid()}", "--pull", "never", "--read-only", "--user", f"{os.getuid()}:{os.getgid()}", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--cpus", "2", "--memory", "512m", "--memory-swap", "512m", "--pids-limit", "64", "--env", "CONTAINER_TOOLS_IN_CONTAINER=1", "inert-image"],
             env=environment,
             text=True,
             capture_output=True,
@@ -43,9 +43,9 @@ class NetworkGateTests(unittest.TestCase):
     def test_networked_lanes_reject_an_unavailable_interface(self):
         for script, lane in (("docker", "run"),):
             with self.subTest(script=script, lane=lane):
-                result = self.invoke("nmrnet_missing0")
+                result = self.invoke("fixture_missing0")
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("nmrnet_missing0", result.stderr)
+                self.assertIn("fixture_missing0", result.stderr)
                 self.assertEqual("", result.stdout)
 
     def test_mapped_proxy_identity_is_explicit_and_validated(self):
@@ -81,7 +81,7 @@ class NetworkGateTests(unittest.TestCase):
             self.assertEqual(f"{os.getuid()}:{os.getgid()}", command[command.index("--user") + 1])
             self.assertEqual("ALL", command[command.index("--cap-drop") + 1])
             self.assertEqual("never", command[command.index("--pull") + 1])
-            self.assertIn("NMR_PROVIDER_TOOLS_IN_CONTAINER=1", command)
+            self.assertIn("CONTAINER_TOOLS_IN_CONTAINER=1", command)
             for limit in ("--cpus", "--memory", "--memory-swap", "--pids-limit"):
                 self.assertIn(limit, command)
             mounts = [command[i + 1] for i, arg in enumerate(command) if arg == "--mount"]
@@ -93,14 +93,14 @@ class NetworkGateTests(unittest.TestCase):
         expected_mounts = {
             f"type=bind,src={Path.cwd()}/tools/bound_http_proxy.py,dst=/workspace/tools/bound_http_proxy.py,readonly",
             f"type=bind,src={Path.cwd()}/tools/container_guard.py,dst=/workspace/tools/container_guard.py,readonly",
-            "type=bind,src=/tmp/nmrnet-proxy.PRINT/ready,dst=/ready",
+            "type=bind,src=/tmp/container-tools-proxy.PRINT/ready,dst=/ready",
         }
         resolver = Path("/run/systemd/resolve/resolv.conf")
         if resolver.exists():
             expected_mounts.add(f"type=bind,src={resolver},dst={resolver},readonly")
         self.assertEqual(expected_mounts, set(proxy_mounts))
-        self.assertIn("type=bind,src=/tmp/nmrnet-proxy.PRINT/ready,dst=/ready", proxy)
-        self.assertNotIn("type=bind,src=/tmp/nmrnet-proxy.PRINT,dst=/ready", proxy)
+        self.assertIn("type=bind,src=/tmp/container-tools-proxy.PRINT/ready,dst=/ready", proxy)
+        self.assertNotIn("type=bind,src=/tmp/container-tools-proxy.PRINT,dst=/ready", proxy)
         self.assertEqual("lo", proxy[proxy.index("--interface") + 1])
         for name in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
             self.assertIn(f"{name}=http://127.0.0.1:PORT", worker)

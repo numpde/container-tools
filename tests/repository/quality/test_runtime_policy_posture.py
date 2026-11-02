@@ -1,4 +1,3 @@
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/test_runtime_policy_posture.py
 # Detector/privacy/escape assertions retained; local roots have no Django migrations to exempt.
 """Flag module-scope uppercase direct-name value assignments for review."""
 

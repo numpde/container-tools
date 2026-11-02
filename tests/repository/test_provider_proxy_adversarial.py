@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from tools import bound_http_proxy
 
-# Source: nmr-provider-tools b170571, packages/provider-core/tests/unit/adversarial/test_provider_proxy.py.
+# Adapted from provider proxy adversarial tests at revision b170571.
 
 
 class ProxyResolutionTests(unittest.TestCase):

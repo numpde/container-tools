@@ -21,7 +21,7 @@ fi
 worker=(--pull never --read-only --user "$uid:$gid" --cap-drop ALL --security-opt no-new-privileges:true
     --cpus 2 --memory 1g --memory-swap 1g --pids-limit 128
     --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m --workdir /workspace
-    --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1
+    --env CONTAINER_TOOLS_IN_CONTAINER=1
     --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace
     --mount "type=bind,src=$root/tools,dst=/workspace/tools,readonly"
     --mount "type=bind,src=$root/requirements/linux-idmap-build.lock,dst=/idmap-build.lock,readonly")
@@ -103,7 +103,7 @@ esac
 source "$root/tools/checker_operation.sh"
 if "$printing"; then
     if ! docker_client_prepare print; then printf '%s' "$docker_client_diagnostic" >&2; exit 2; fi
-    printf '%q ' "${engine[@]}" create --label org.nmr-provider-tools.operation=PRINT --cidfile /tmp/nmr-provider-tools.PRINT/container.cid "${arguments[@]}"
+    printf '%q ' "${engine[@]}" create --label org.container-tools.operation=PRINT --cidfile /tmp/container-tools.PRINT/container.cid "${arguments[@]}"
     printf '\n'
     exit
 fi
@@ -126,7 +126,7 @@ if [[ $action == package ]]; then
     arguments=(--pull never --network none --read-only --user "$checker_host_uid:$checker_host_gid" --cap-drop ALL --security-opt no-new-privileges:true
         --cpus 2 --memory 1g --memory-swap 1g --pids-limit 128 --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m
         --init --tmpfs /runtime:rw,nosuid,nodev,exec,size=256m,mode=1777 --workdir /workspace
-        --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace
+        --env CONTAINER_TOOLS_IN_CONTAINER=1 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace
         --mount "type=bind,src=$operation_directory/source/tools,dst=/workspace/tools,readonly"
         --mount "type=bind,src=$operation_directory/source/packages/linux-idmap,dst=/committed-package,readonly"
         --mount "type=bind,src=$operation_directory/source/requirements/linux-idmap-build.lock,dst=/idmap-build.lock,readonly"
@@ -138,7 +138,7 @@ fi
 if [[ $action == build ]]; then
     arguments=(--pull never --network none --read-only --user "$checker_host_uid:$checker_host_gid" --cap-drop ALL --security-opt no-new-privileges:true
         --cpus 2 --memory 1g --memory-swap 1g --pids-limit 128 --tmpfs /tmp:rw,nosuid,nodev,noexec,size=256m
-        --workdir /workspace --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1
+        --workdir /workspace --env CONTAINER_TOOLS_IN_CONTAINER=1
         --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace
         --mount "type=bind,src=$operation_directory/source/tools,dst=/workspace/tools,readonly"
         --mount "type=bind,src=$operation_directory/source/packages/linux-idmap,dst=/package,readonly"

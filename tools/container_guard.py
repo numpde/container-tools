@@ -10,7 +10,7 @@ import os
 
 def require_container():
     """Return only for the exact launcher marker; otherwise exit with guidance."""
-    if os.environ.get("NMR_PROVIDER_TOOLS_IN_CONTAINER") != "1":
+    if os.environ.get("CONTAINER_TOOLS_IN_CONTAINER") != "1":
         raise SystemExit(
             "Cannot run repository Python without its container launcher. "
             "Use the maintained Make target so the launcher supplies the container environment."

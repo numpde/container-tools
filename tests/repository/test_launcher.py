@@ -25,7 +25,7 @@ class LauncherTests(unittest.TestCase):
         result = subprocess.run(
             ["bash", "tools/repository.sh", "--print", "tests/unit/linux-idmap"],
             cwd=ROOT,
-            env=os.environ | {"NMR_SELECTED_DOCKER_ENDPOINT": "unix:///fixture.sock"},
+            env=os.environ | {"CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///fixture.sock"},
             capture_output=True, text=True, check=False,
         )
         self.assertEqual(0, result.returncode, msg=result.stderr)
@@ -69,7 +69,7 @@ class LauncherTests(unittest.TestCase):
         self.assertNotIn("--privileged", arguments)
 
     def test_missing_context_without_terminal_refuses_before_engine_use(self):
-        environment = os.environ | {"DOCKER_CONTEXT": "unreviewed", "NMR_SELECTED_DOCKER_ENDPOINT": "unix:///tmp/poison.sock", "DOCKER_CONTEXT_INPUT_ORIGIN": "command line", "DOCKER_CONTEXT_INPUT": "local-test", "MAKELEVEL": "1"}
+        environment = os.environ | {"DOCKER_CONTEXT": "unreviewed", "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///tmp/poison.sock", "DOCKER_CONTEXT_INPUT_ORIGIN": "command line", "DOCKER_CONTEXT_INPUT": "local-test", "MAKELEVEL": "1"}
         result = subprocess.run(
             ["make", "--no-print-directory", "tests/repository/command"],
             cwd=ROOT, env=environment, stdin=subprocess.DEVNULL, start_new_session=True,
@@ -81,7 +81,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_selected_context_is_resolved_to_local_socket_and_remote_is_refused(self):
         directory = ROOT / "tests/repository/fixtures/docker-context"
-        env = os.environ | {"PATH": f"{directory}:{os.environ['PATH']}", "DOCKER_CONTEXT": "local-test", "NMR_SELECTED_DOCKER_ENDPOINT": "unix:///tmp/poison.sock", "MAKELEVEL": "1"}
+        env = os.environ | {"PATH": f"{directory}:{os.environ['PATH']}", "DOCKER_CONTEXT": "local-test", "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///tmp/poison.sock", "MAKELEVEL": "1"}
         command = ["make", "--no-print-directory", "tests/repository/command", "DOCKER_CONTEXT=local-test"]
         result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, check=False)
         self.assertEqual(0, result.returncode, msg=result.stderr)
@@ -95,7 +95,7 @@ class LauncherTests(unittest.TestCase):
     def test_interactive_menu_offers_only_local_contexts(self):
         fixture = ROOT / "tests/repository/fixtures/docker-context"
         environment = {key: value for key, value in os.environ.items()
-                       if key not in {"DOCKER_CONTEXT_INPUT_ORIGIN", "DOCKER_CONTEXT_INPUT", "NMR_SELECTED_DOCKER_CONTEXT", "NMR_SELECTED_DOCKER_ENDPOINT"}}
+                       if key not in {"DOCKER_CONTEXT_INPUT_ORIGIN", "DOCKER_CONTEXT_INPUT", "CONTAINER_TOOLS_SELECTED_DOCKER_CONTEXT", "CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"}}
         environment["PATH"] = f"{fixture}:{os.environ['PATH']}"
         pid, terminal = pty.fork()
         if pid == 0:
@@ -144,7 +144,7 @@ class LauncherTests(unittest.TestCase):
             root = Path(directory)
             shutil.copytree(ROOT / "tools", root / "tools")
             shutil.copyfile(ROOT / "Makefile", root / "Makefile")
-            (root / "tools/checker.sh").write_text('printf "selected=%s\\n" "$NMR_SELECTED_DOCKER_ENDPOINT"\n')
+            (root / "tools/checker.sh").write_text('printf "selected=%s\\n" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"\n')
             log = root / "context-inspections"
             fixture = ROOT / "tests/repository/fixtures/docker-context"
             env = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}", "FAKE_CONTEXT_LOG": str(log)}
@@ -166,7 +166,7 @@ class LauncherTests(unittest.TestCase):
             (root / ".aws").mkdir()
             launcher = root / "tools/repository.sh"
             launcher.write_bytes((ROOT / "tools/repository.sh").read_bytes())
-            environment = os.environ | {"NMR_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock"}
+            environment = os.environ | {"CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT": "unix:///var/run/docker.sock"}
             command = ["bash", str(launcher), "--print", "tests/repository"]
             result = subprocess.run(command, env=environment, capture_output=True, text=True, check=False)
             self.assertEqual(0, result.returncode, msg=result.stderr)

@@ -1,4 +1,3 @@
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/test_error_transparency_posture.py
 # Original detector fixtures and repository assertions retained; source roots alone are local.
 """Flag filesystem failures reduced to fixed default-CLI messages."""
 

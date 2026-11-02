@@ -36,8 +36,8 @@ def process_status():
 class RuntimePostureTests(unittest.TestCase):
     def test_runs_as_explicit_non_root_caller_identity(self):
         for variable, actual in (
-            ("NMR_PROVIDER_TOOLS_EXPECTED_UID", os.getuid()),
-            ("NMR_PROVIDER_TOOLS_EXPECTED_GID", os.getgid()),
+            ("CONTAINER_TOOLS_EXPECTED_UID", os.getuid()),
+            ("CONTAINER_TOOLS_EXPECTED_GID", os.getgid()),
         ):
             expected = os.environ.get(variable)
             self.assertIsNotNone(expected, msg=f"Cannot verify caller identity: the maintained launcher must inject {variable}.")

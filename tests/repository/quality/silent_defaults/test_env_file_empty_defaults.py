@@ -50,7 +50,7 @@ class EnvFileEmptyDefaultsTest(unittest.TestCase):
     def test_env_file_scan_excludes_operator_only_secret_files(self) -> None:
         # Original source proves a deployment-secret exclusion while admitting
         # its documented example. Exercise that same contract in a fixture:
-        # NMRNet has no reviewed private dotenv exclusions to grant.
+        # This repository has no reviewed private dotenv exclusions to grant.
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for name in ("private.env", "private.env.example"):

@@ -1,4 +1,3 @@
-# Port source: https://github.com/numpde/nmr-api-v1/blob/dbd81a81ee92bd04d3223f4389a26891181cc0cd/tests/repository/test_validation_guard_posture.py
 # Original detector admission, fixtures and assertions retained; local rendering makes AST inversion explicit.
 """Flag narrow guard shapes whose accepted condition merits review."""
 
@@ -452,7 +451,7 @@ class GuardPostureTests(unittest.TestCase):
     def test_check_implementation_has_no_findings(self) -> None:
         self.assertEqual([], _scan([_CHECK_PATH]))
 
-    def test_nmr_api_has_no_guard_posture_findings(self) -> None:
+    def test_repository_has_no_guard_posture_findings(self) -> None:
         findings = _scan(python_sources(production_only=True))
         if findings:
             self.fail("guards needing accepted-condition review:\n" + "\n".join(finding.diagnostic() for finding in findings))

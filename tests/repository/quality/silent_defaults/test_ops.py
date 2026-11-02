@@ -1,5 +1,5 @@
 # Port source: https://github.com/numpde/dapp32/blob/778c16f8d8b77181d2ac4cd11a62a2034ded2518/tests/checks/silent_defaults/test_ops.py
-# Original detector semantics and fixtures retained; inventories use authored NMRNet paths.
+# Original detector semantics and fixtures retained; inventories use authored donor paths.
 from __future__ import annotations
 
 from tools.container_guard import require_container
@@ -432,7 +432,7 @@ def docker_default_findings_for_source(
 def docker_logical_lines(source):
     """Join Docker instruction continuations without losing their first line.
 
-    The source scanner handled one-line ENV forms. NMRNet's authored images use
+    The source scanner handled one-line ENV forms. Some authored images use
     multiline ENV, so tokenizing each physical line would crash at a valid final
     backslash and leave its later defaults unchecked.
     """

@@ -7,8 +7,8 @@ source "$root/tools/docker_client.sh"
 source "$root/tools/inference_native.sh"
 
 checker_begin() {
-    operation_directory=$(umask 077; mktemp -d /tmp/nmr-provider-tools.XXXXXXXX) || return "$?"
-    operation_label="org.nmr-provider-tools.operation=${operation_directory##*/}"
+    operation_directory=$(umask 077; mktemp -d /tmp/container-tools.XXXXXXXX) || return "$?"
+    operation_label="org.container-tools.operation=${operation_directory##*/}"
     docker_client_directory=
     inference_retirement_confirmed=true
     create_pending=false

@@ -15,5 +15,3 @@ make tests DOCKER_CONTEXT=generic
 ```
 
 `system` uses the selected engine’s network for dependency acquisition. Rootless engines may use a separate network namespace, so host routing and interface availability depend on the engine configuration. Preparation verifies pinned inputs and builds offline. Normal checks run offline with read-only source mounts. Run `make help` for the available commands.
-
-The [integration patches](integrations/linux-idmap/) are historical candidate adaptations for NMRPeak and NMRNet. Their pinned instructions refer to the original nmr-provider-tools repository; the [design note](notes/028_provider_deploy_design_20261031.txt) records their original context and qualification limits.

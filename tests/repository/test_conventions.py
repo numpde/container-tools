@@ -1,8 +1,7 @@
 """Check repository conventions against authored sources and maintained targets.
 
-NMRPeak supplies the hierarchical test aggregate; Magnet supplies recursive
-production-source inventories with narrow, documented ownership exceptions:
-https://github.com/numpde/nmrpeak-repro/blob/f8055ab1065795fd46f8c1539e894cf9773f5495/Makefile#L87-L102
+The test aggregate and recursive production-source inventories have narrow,
+documented ownership exceptions:
 https://github.com/numpde/magnet-deploy/blob/2d4ee50b0359e71900fce9289ea01f46d0f41249/tests/repository/test_provider_event_logging_posture.py#L34-L94
 This suite inspects source without importing scientific dependencies. Its own
 execution remains inside the maintained container, just like the unit suite.

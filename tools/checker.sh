@@ -41,7 +41,7 @@ fi
 worker=(--pull never --read-only --user "$worker_uid:$worker_gid" --cap-drop ALL --security-opt no-new-privileges:true
     --cpus 2 --memory 512m --memory-swap 512m --pids-limit 64
     --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m --workdir /workspace
-    --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace
+    --env CONTAINER_TOOLS_IN_CONTAINER=1 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace
     --mount "type=bind,src=$root/tools/checker_dependencies.py,dst=/workspace/tools/checker_dependencies.py,readonly"
     --mount "type=bind,src=$root/tools/artifacts.py,dst=/workspace/tools/artifacts.py,readonly"
     --mount "type=bind,src=$root/tools/container_guard.py,dst=/workspace/tools/container_guard.py,readonly"
@@ -85,7 +85,7 @@ build_base_image=$(bash -eu -c 'source "$1"; printf "%s" "$base_image"' bash "$c
 # All build-mounted tools and declarations now come from the captured context.
 checker_run 60 --pull never --network none --read-only --user "$checker_host_uid:$checker_host_gid" --cap-drop ALL --security-opt no-new-privileges:true \
     --cpus 2 --memory 512m --memory-swap 512m --pids-limit 64 --tmpfs /tmp:rw,nosuid,nodev,noexec,size=64m \
-    --workdir /workspace --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace \
+    --workdir /workspace --env CONTAINER_TOOLS_IN_CONTAINER=1 --env PYTHONDONTWRITEBYTECODE=1 --env PYTHONPATH=/workspace \
     --mount "type=bind,src=$context/tools,dst=/workspace/tools,readonly" \
     --mount "type=bind,src=$context/requirements,dst=/workspace/requirements,readonly" \
     --mount "type=bind,src=$wheelhouse_directory,dst=/wheelhouse,readonly" \
@@ -97,7 +97,7 @@ checker_run 60 --pull never --network none --read-only --user "$checker_host_uid
 # Retain captured inputs on every unsuccessful dispatched build/admission/tag.
 retain_operation=true
 checker_call 'offline checker build' 900 stdio "${engine[@]}" build --builder default --platform linux/amd64 \
-    --network none --pull=false --build-arg "BASE_IMAGE=$build_base_image" --label "org.nmr-provider-tools.inputs=$captured" \
+    --network none --pull=false --build-arg "BASE_IMAGE=$build_base_image" --label "org.container-tools.inputs=$captured" \
     --iidfile "$operation_directory/built-image" --file "$context/containers/checker/Dockerfile" "$context"
 image=
 if [[ -f $operation_directory/built-image && ! -L $operation_directory/built-image && $(stat -c %s -- "$operation_directory/built-image") -le 72 ]]; then
@@ -108,11 +108,11 @@ if [[ ! $image =~ ^sha256:[0-9a-f]{64}$ ]] \
     operation_diagnostic+=$'Cannot admit checker build: BuildKit did not publish an immutable image ID.\n'
     exit 2
 fi
-checker_metadata "$operation_directory/built-label" image inspect --format '{{index .Config.Labels "org.nmr-provider-tools.inputs"}}' "$image"
+checker_metadata "$operation_directory/built-label" image inspect --format '{{index .Config.Labels "org.container-tools.inputs"}}' "$image"
 if ! cmp -s "$operation_directory/built-label" <(printf '%s\n' "$captured"); then
     operation_diagnostic+=$'Cannot admit checker build: image input label differs from captured inputs.\n'
     exit 2
 fi
-checker_call 'checker image publication' 30 stdio "${engine[@]}" image tag "$image" "nmr-provider-tools/checker:$captured"
+checker_call 'checker image publication' 30 stdio "${engine[@]}" image tag "$image" "container-tools/checker:$captured"
 retain_operation=false
 printf -v operation_success 'Prepared checker %s with input fingerprint %s.\n' "$image" "$captured"
