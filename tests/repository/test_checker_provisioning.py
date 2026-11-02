@@ -42,7 +42,7 @@ class CheckerProvisioningTests(unittest.TestCase):
 
     def test_network_caller_supplies_worker_grants_and_literal_shared_cache(self):
         (self.root / "tools/checker_operation.sh").write_text("""checker_begin() { :; }
-checker_host_identity() { checker_host_uid=$3; checker_host_gid=$4; }
+checker_host_identity() { checker_host_uid=0; checker_host_gid=0; }
 """)
         (self.root / "tools/docker.sh").write_text(
             'printf "%s\\0" "$@" > "$PROVISION_ARGUMENTS"\n'
@@ -53,10 +53,10 @@ checker_host_identity() { checker_host_uid=$3; checker_host_gid=$4; }
         self.assertEqual(0, result.returncode, msg=result.stderr)
         arguments = self.record.read_bytes().decode().split("\0")[:-1]
         self.assertEqual("unix:///tmp/selected-default.sock", Path(f"{self.record}.endpoint").read_text())
-        self.assertEqual("run", arguments[0])
+        self.assertEqual(["run", "--proxy-user", "0:0"], arguments[:3])
         self.assertIn(f"type=bind,src={cache},dst=/wheelhouse", arguments)
         self.assertIn("NMR_PROVIDER_TOOLS_IN_CONTAINER=1", arguments)
-        for flag, value in (("--pull", "never"), ("--user", f"{os.getuid()}:{os.getgid()}"), ("--cap-drop", "ALL"),
+        for flag, value in (("--pull", "never"), ("--user", "0:0"), ("--cap-drop", "ALL"),
                             ("--security-opt", "no-new-privileges:true"), ("--memory", "512m"),
                             ("--memory-swap", "512m"), ("--cpus", "2"), ("--pids-limit", "64")):
             self.assertEqual(value, arguments[arguments.index(flag) + 1])

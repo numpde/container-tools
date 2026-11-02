@@ -29,7 +29,7 @@ require_interface() {
 }
 
 if [[ $# == 0 ]]; then
-    printf '%s\n' 'Usage: tools/docker.sh [--print] {download-proxy|check-interface|require-images IMAGE...|run DOCKER_RUN_ARGS...}' >&2
+    printf '%s\n' 'Usage: tools/docker.sh [--print] {download-proxy|check-interface|require-images IMAGE...|run --proxy-user UID:GID DOCKER_RUN_ARGS...}' >&2
     exit 2
 fi
 operation=$1
@@ -43,11 +43,22 @@ case "$operation" in
     check-interface) require_interface; exit ;;
     require-images) shift; if [[ $# == 0 ]]; then exit 0; fi ;;
     run) ;;
-    *) printf '%s\n' 'Usage: tools/docker.sh [--print] {download-proxy|check-interface|require-images IMAGE...|run DOCKER_RUN_ARGS...}' >&2; exit 2 ;;
+    *) printf '%s\n' 'Usage: tools/docker.sh [--print] {download-proxy|check-interface|require-images IMAGE...|run --proxy-user UID:GID DOCKER_RUN_ARGS...}' >&2; exit 2 ;;
 esac
 if [[ "$operation" == run ]]; then
-    require_interface
     shift
+    if [[ $# -lt 2 || $1 != --proxy-user || ! $2 =~ ^([0-9]{1,10}):([0-9]{1,10})$ ]]; then
+        printf '%s\n' 'Cannot start acquisition: supply the mapped proxy identity as --proxy-user UID:GID.' >&2
+        exit 2
+    fi
+    proxy_uid=${BASH_REMATCH[1]}
+    proxy_gid=${BASH_REMATCH[2]}
+    if (( 10#$proxy_uid >= 4294967295 || 10#$proxy_gid >= 4294967295 )); then
+        printf '%s\n' 'Cannot start acquisition: the mapped proxy UID and GID must be valid Linux IDs.' >&2
+        exit 2
+    fi
+    shift 2
+    require_interface
     readonly caller_uid="$(id -u)"
     readonly caller_gid="$(id -g)"
     if [[ "$caller_uid" == 0 || "$caller_gid" == 0 ]]; then
@@ -329,7 +340,7 @@ fi
 # The proxy shares the tools namespace with its guard; neither source is writable.
 proxy=("${engine[@]}" create --cidfile "$scratch/proxy.cid" --pull never --network host --read-only
     --env NMR_PROVIDER_TOOLS_IN_CONTAINER=1 --workdir /workspace
-    --user "$caller_uid:$caller_gid" --cap-drop ALL --security-opt no-new-privileges:true
+    --user "$proxy_uid:$proxy_gid" --cap-drop ALL --security-opt no-new-privileges:true
     --cpus 1 --memory 128m --memory-swap 128m --pids-limit 64
     --tmpfs /tmp:rw,nosuid,nodev,noexec,size=16m
     "${resolver_mount[@]}"

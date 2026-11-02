@@ -121,7 +121,7 @@ class NetworkCancellationTests(unittest.TestCase):
                     "ALTER_STARTED_RECEIPT": receipt,
                 }
                 process = subprocess.Popen(
-                    ["bash", "tools/docker.sh", "run", "--pull", "never", "inert-image"],
+                    ["bash", "tools/docker.sh", "run", "--proxy-user", f"{os.getuid()}:{os.getgid()}", "--pull", "never", "inert-image"],
                     env=environment,
                     text=True,
                     stdout=subprocess.PIPE,
@@ -189,7 +189,7 @@ class NetworkCancellationTests(unittest.TestCase):
                 if no_lf:
                     environment["CID_NO_LF_PHASE"] = phase
                 process = subprocess.Popen(
-                    ["bash", "tools/docker.sh", "run", "--pull", "never", "inert-image"],
+                    ["bash", "tools/docker.sh", "run", "--proxy-user", f"{os.getuid()}:{os.getgid()}", "--pull", "never", "inert-image"],
                     env=environment,
                     text=True,
                     stdout=subprocess.PIPE,
@@ -266,7 +266,7 @@ class ContainerIdentityTests(unittest.TestCase):
             }
             try:
                 result = subprocess.run(
-                    ["bash", "tools/docker.sh", "run", "--pull", "never", "inert-image"],
+                    ["bash", "tools/docker.sh", "run", "--proxy-user", f"{os.getuid()}:{os.getgid()}", "--pull", "never", "inert-image"],
                     env=environment,
                     text=True,
                     capture_output=True,

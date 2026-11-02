@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 class NetworkGateTests(unittest.TestCase):
-    def invoke(self, interface=None):
+    def invoke(self, interface=None, proxy_user=None):
         environment = dict(os.environ)
         environment["NMR_SELECTED_DOCKER_ENDPOINT"] = "unix:///var/run/docker.sock"
         environment["DOCKER_CONTEXT_INPUT_ORIGIN"] = "command line"
@@ -25,7 +25,7 @@ class NetworkGateTests(unittest.TestCase):
         if interface is not None:
             environment["NETWORK_INTERFACE_INPUT"] = interface
         return subprocess.run(
-            ["bash", "tools/docker.sh", "--print", "run", "--pull", "never", "--read-only", "--user", f"{os.getuid()}:{os.getgid()}", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--cpus", "2", "--memory", "512m", "--memory-swap", "512m", "--pids-limit", "64", "--env", "NMR_PROVIDER_TOOLS_IN_CONTAINER=1", "inert-image"],
+            ["bash", "tools/docker.sh", "--print", "run", "--proxy-user", proxy_user if proxy_user is not None else f"{os.getuid()}:{os.getgid()}", "--pull", "never", "--read-only", "--user", f"{os.getuid()}:{os.getgid()}", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true", "--cpus", "2", "--memory", "512m", "--memory-swap", "512m", "--pids-limit", "64", "--env", "NMR_PROVIDER_TOOLS_IN_CONTAINER=1", "inert-image"],
             env=environment,
             text=True,
             capture_output=True,
@@ -47,6 +47,25 @@ class NetworkGateTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("nmrnet_missing0", result.stderr)
                 self.assertEqual("", result.stdout)
+
+    def test_mapped_proxy_identity_is_explicit_and_validated(self):
+        missing = subprocess.run(
+            ["bash", "tools/docker.sh", "--print", "run", "--pull", "never", "inert-image"],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertNotEqual(0, missing.returncode)
+        self.assertEqual("", missing.stdout)
+        self.assertIn("--proxy-user", missing.stderr)
+        result = self.invoke("lo", proxy_user="0:0")
+        self.assertEqual(0, result.returncode, msg=result.stderr)
+        proxy = shlex.split(result.stdout.splitlines()[0])
+        self.assertEqual("0:0", proxy[proxy.index("--user") + 1])
+        for identity in ("", "-1:0", "1:2:3", "4294967295:0", "0:4294967295"):
+            with self.subTest(identity=identity):
+                rejected = self.invoke("lo", proxy_user=identity)
+                self.assertNotEqual(0, rejected.returncode)
+                self.assertEqual("", rejected.stdout)
+                self.assertIn("proxy", rejected.stderr)
 
     def test_proxy_and_worker_are_contained_and_override_proxy_environment(self):
         result = self.invoke("lo")

@@ -50,7 +50,7 @@ if [[ $action == download || $action == prepare ]]; then
     # The transport owns both networked containers and their cleanup. Do not
     # put it beneath a signal-forwarding process-group killer.
     source "$root/tools/inference_native.sh"
-    if controller_native 'checker acquisition' untimed stdio bash "$root/tools/docker.sh" run \
+    if controller_native 'checker acquisition' untimed stdio bash "$root/tools/docker.sh" run --proxy-user "$worker_uid:$worker_gid" \
         "${worker[@]}" --mount "type=bind,src=$wheelhouse_directory,dst=/wheelhouse" \
         --entrypoint python3 "$base_image" -B -m tools.checker_dependencies download \
         --declaration /workspace/requirements/checker-dependencies.json --directory /wheelhouse; then :; else
