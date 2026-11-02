@@ -1,0 +1,14 @@
+.agents/
+.aws/
+.codex/
+.vscode/
+/config/deployments/**
+!/config/deployments/**/
+!/config/deployments/**/*.toml.example
+/secrets/**
+!/secrets/
+!/secrets/README.md
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
