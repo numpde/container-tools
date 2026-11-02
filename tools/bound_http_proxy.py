@@ -302,7 +302,7 @@ def _query_ipv4(
         if end > len(response):
             raise DNSResponseRejected("truncated DNS record data")
         if record_class == 1 and record_type == 1 and size == 4:
-            # silent-defaults: allow-contract -- Each response-local owner bucket contains only its received A records; proof=repository_checks/test_proxy_posture.py::ImageBuildProxyTransportTests.test_dns_groups_only_received_a_records_by_owner
+            # silent-defaults: allow-contract -- Each response-local owner bucket contains only its received A records; proof=tests/repository/test_proxy_posture.py::ImageBuildProxyTransportTests.test_dns_groups_only_received_a_records_by_owner
             addresses.setdefault(owner, []).append(socket.inet_ntoa(response[offset:end]))
         elif record_class == 1 and record_type == 5:
             aliases[owner], _ = _read_dns_name(response, offset)
@@ -314,7 +314,7 @@ def resolve_ipv4_bound(host: str, interface: str, *, deadline: float) -> tuple[s
     """Follow bounded IPv4 aliases without using an unbound system resolver."""
     try:
         return (str(ipaddress.IPv4Address(host)),)
-    # silent-defaults: allow-contract -- A destination that is not a literal IPv4 address proceeds to interface-bound DNS; proof=repository_checks/test_proxy_posture.py::ImageBuildProxyTransportTests.test_expired_dns_budget_does_not_start_the_next_server
+    # silent-defaults: allow-contract -- A destination that is not a literal IPv4 address proceeds to interface-bound DNS; proof=tests/repository/test_proxy_posture.py::ImageBuildProxyTransportTests.test_expired_dns_budget_does_not_start_the_next_server
     except ipaddress.AddressValueError:
         pass
     normalized_host = host.rstrip(".").encode("idna").decode("ascii").lower()
@@ -588,7 +588,7 @@ def publish_readiness(ready_file, content):
             # The complete receipt remains usable; only private staging-alias
             # cleanup is unconfirmed. Never roll back by a replaceable path.
             # https://github.com/numpde/magnet-deploy/blob/2d4ee50b0359e71900fce9289ea01f46d0f41249/scripts/image-build-proxy.py#L406-L410
-            # silent-defaults: allow-contract -- Report the observed publication outcome independently of failed temporary-alias cleanup; proof=repository_checks/test_proxy_posture.py::ImageBuildProxyWorkerTests.test_readiness_publication_failure_survives_temporary_cleanup_failure
+            # silent-defaults: allow-contract -- Report the observed publication outcome independently of failed temporary-alias cleanup; proof=tests/repository/test_proxy_posture.py::ImageBuildProxyWorkerTests.test_readiness_publication_failure_survives_temporary_cleanup_failure
             outcome = (
                 "Readiness was published; serving will continue." if published else "Readiness publication did not complete."
             )
