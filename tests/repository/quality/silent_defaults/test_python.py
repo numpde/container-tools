@@ -9,6 +9,7 @@ require_container()
 import ast
 import io
 import tokenize
+import textwrap
 import unittest
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -473,6 +474,26 @@ def _exception_outcome_contract(handler, protected):
         # to the process success path. Earlier conditional returns must also fail.
         return all(_positive_exit(node.value) for statement in handler.body
                    for node in ast.walk(statement) if isinstance(node, ast.Return))
+    if any(any(args_attribute_name(node) is not None for node in ast.walk(statement))
+           for statement in protected.body):
+        return False
+    # Returning the caught exception preserves the failure for an outer owner.
+    if (handler.name is not None and len(handler.body) == 1
+            and isinstance(handler.body[0], ast.Return)
+            and isinstance(handler.body[0].value, ast.Name)
+            and handler.body[0].value.id == handler.name):
+        return True
+    # A missing stat target can be reported as an explicit absence result.
+    if (isinstance(handler.type, ast.Name) and handler.type.id == "FileNotFoundError"
+            and len(handler.body) == 1 and isinstance(handler.body[0], ast.Return)
+            and isinstance(handler.body[0].value, ast.Constant) and handler.body[0].value.value is True
+            and len(protected.body) == 1 and isinstance(protected.body[0], ast.Expr)
+            and isinstance(protected.body[0].value, ast.Call)
+            and isinstance(protected.body[0].value.func, ast.Attribute)
+            and isinstance(protected.body[0].value.func.value, ast.Name)
+            and protected.body[0].value.func.value.id == "os"
+            and protected.body[0].value.func.attr == "stat"):
+        return True
     declared = handler.type.elts if isinstance(handler.type, ast.Tuple) else [handler.type]
     if any(not isinstance(node, ast.Name) or node.id in {"Exception", "BaseException", "ExceptionGroup", "BaseExceptionGroup"}
            for node in declared):
@@ -698,6 +719,22 @@ def python_operator_default_findings(path: Path) -> list[str]:
 
 
 class PythonSilentDefaultsTest(unittest.TestCase):
+    def test_exception_outcome_contract_admits_only_explicit_retention_or_stat_absence(self):
+        cases = (
+            ("try:\n resource.close()\nexcept BaseException as error:\n return error", True),
+            ("try:\n resource.close()\nexcept BaseException as error:\n return other", False),
+            ("try:\n resource.close()\nexcept BaseException:\n return True", False),
+            ("try:\n os.stat(path)\nexcept FileNotFoundError:\n return True", True),
+            ("try:\n read_input()\nexcept FileNotFoundError:\n return True", False),
+            ("try:\n os.stat(path)\n read_input()\nexcept FileNotFoundError:\n return True", False),
+            ("try:\n run(args.profile)\nexcept BaseException as error:\n return error", False),
+            ("try:\n os.stat(args.path)\nexcept FileNotFoundError:\n return True", False),
+        )
+        for source, expected in cases:
+            with self.subTest(source=source):
+                owner = ast.parse("def probe():\n" + textwrap.indent(source, " ")).body[0].body[0]
+                self.assertEqual(expected, _exception_outcome_contract(owner.handlers[0], owner))
+
     maxDiff = None
 
     def test_matchers_flag_representative_python_defaults(self) -> None:

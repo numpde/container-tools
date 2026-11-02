@@ -86,7 +86,7 @@ def read_maps(read_file: Callable[[str], bytes]) -> MapRows:
 
 def observe_process(pid: int) -> MapRows:
     """Read both map files for a PID visible in the caller's /proc."""
-    if type(pid) is not int or pid <= 0:
+    if not (type(pid) is int and 0 < pid):
         raise ValueError("pid must be a positive integer")
     directory = Path("/proc") / str(pid)
     return read_maps(lambda name: (directory / name).read_bytes())

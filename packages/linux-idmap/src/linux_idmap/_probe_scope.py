@@ -42,7 +42,7 @@ class OwnedProbe:
         try:
             self.cid = self.engine.create(command, **arguments)
         except (DockerError, BaseExceptionGroup) as error:
-            # silent-defaults: allow-contract -- Missing dispatch metadata cannot prove non-creation for a foreign group.
+            # Missing dispatch metadata cannot prove non-creation for a foreign group.
             if not getattr(error, "mutation_uncertain", True):
                 self.state = ResourceState.NOT_CREATED
             raise
@@ -78,6 +78,7 @@ class OwnedProbe:
         if container is not None:
             self.spec.verify(container, self.cid)
             if container.running or container.pid > 0:
+                # silent-defaults: allow-contract -- A newly reported run has no checked process identity yet.
                 self.reported_runs.setdefault(ContainerRun.of(container), None)
         return container
 
@@ -257,7 +258,9 @@ def owned_probe(request: ProbeRequest, *, cancel: Cancellation | None, executabl
     failures = [error for error in (*failures, late_cancel) if error is not None]
     problems = [_problem(error) for error in failures]
     state = ResourceState.NOT_CREATED if probe is None else probe.state
+    # silent-defaults: allow-contract -- No probe means no container identity exists.
     cid = None if probe is None else probe.cid
+    # silent-defaults: allow-contract -- No probe means there is no owned resource handle.
     handle = None if probe is None else probe.handle()
     retirement = Retirement(state, cid, tuple(problems[1:]))
     if problems:

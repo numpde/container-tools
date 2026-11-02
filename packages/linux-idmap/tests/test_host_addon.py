@@ -166,6 +166,7 @@ class RealProcTests(unittest.TestCase):
                     if name == 'cmdline':
                         token_reads += 1
                         # Only argv is controlled; process/stat/procfs evidence is real.
+                        # silent-defaults: allow-contract -- The second fixture read changes the process token.
                         return self.token.encode() + b'\0' if token_reads == 1 else b'foreign-process\0'
                     return original(fd, name, limit)
                 with patch('linux_idmap._procfs._read_at', side_effect=changing) as reads:

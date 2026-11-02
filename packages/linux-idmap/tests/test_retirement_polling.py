@@ -51,6 +51,7 @@ class RetirementPolling(unittest.TestCase):
                 self.assertEqual(expected, caught.exception.retirement.state)
                 categories = [caught.exception.problem.category,
                               *(problem.category for problem in caught.exception.retirement.problems)]
+                # silent-defaults: allow-contract -- Expected diagnostics depend on confirmed process absence.
                 expected_categories = ['process-identity'] if absent else ['timeout', 'process-identity', 'timeout']
                 self.assertEqual(expected_categories, categories)
                 self.assertEqual(replacement_pid, guard.pid_absent.call_args.args[0])

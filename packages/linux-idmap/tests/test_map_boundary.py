@@ -116,7 +116,11 @@ class MapBoundaryTests(unittest.TestCase):
         self.assertEqual([asdict(row) for row in raw], list(asdict(affine)["rows"]))
 
     def test_only_successful_qualified_observation_delivers_host_coordinates(self):
-        raw = consistent_maps(lambda name: b"0 1000 1\n" if name == "uid_map" else b"0 2000 1\n")
+        def read(name):
+            if name == "uid_map":
+                return b"0 1000 1\n"
+            return b"0 2000 1\n"
+        raw = consistent_maps(read)
         identity = ProcessIdentity(42, 123, FileIdentity(7, 9))
         source = SimpleNamespace(identity=identity, read_maps=lambda: raw)
 

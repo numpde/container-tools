@@ -133,6 +133,7 @@ def _close_error(resource) -> BaseException | None:
     """Attempt one close and return its error, if any."""
     try:
         resource.close()
+    # silent-defaults: allow-exception-outcome -- Return the actual close failure to the owner for ordered reporting.
     except BaseException as error:
         return error
     return None

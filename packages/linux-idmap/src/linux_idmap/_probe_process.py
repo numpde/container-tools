@@ -57,6 +57,7 @@ class ProbeProcesses(Procfs):
             with self.root() as (root, _reader):
                 try:
                     os.stat(str(pid), dir_fd=root, follow_symlinks=False)
+                # silent-defaults: allow-exception-outcome -- A missing proc entry establishes this PID is absent.
                 except FileNotFoundError:
                     return True
                 return False

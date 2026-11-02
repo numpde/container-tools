@@ -32,12 +32,7 @@ YAML_ENV_MAPPING_BLANK_RE = re.compile(r"^\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*):\s
 YAML_ENVIRONMENT_BLOCK_RE = re.compile(r"^(?P<indent>\s*)environment:\s*$")
 WORKFLOW_DEFAULT_FIELD_RE = re.compile(r"^\s*default:\s*(?P<value>.*)$")
 ALLOWED_MAKE_DEFAULTS = {}
-# The installed runtime supplies its operational guard marker and forbids
-# bytecode writes on its read-only filesystem. Neither selects operator input.
-ALLOWED_DOCKER_DEFAULTS = {
-    ("ENV", "containers/delivery/Dockerfile", "PROVIDER_CORE_IN_CONTAINER", "1"),
-    ("ENV", "containers/delivery/Dockerfile", "PYTHONDONTWRITEBYTECODE", "1"),
-}
+ALLOWED_DOCKER_DEFAULTS = set()
 ALLOWED_SHELL_DEFAULTS = set()
 
 

@@ -62,8 +62,10 @@ class Engine:
                       for index, value in enumerate(arguments) if value == "--label")
         image_index = arguments.index("--entrypoint") + 2
         uid, gid = option("--user").split(":")
+        # silent-defaults: allow-contract -- The fixture maps absent host mode to Docker default mode.
+        userns_mode = "host" if "--userns=host" in arguments else "default"
         policy = SimpleNamespace(user_uid=uid, user_gid=gid, interpreter=option("--entrypoint"),
-                                 userns_mode="host" if "--userns=host" in arguments else "default")
+                                 userns_mode=userns_mode)
         spec = SimpleNamespace(name=option("--name"), image_id=arguments[image_index],
                                token=labels["linux-idmap.token"], request=policy,
                                command=tuple(arguments[image_index + 1:]))

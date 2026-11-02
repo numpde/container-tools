@@ -39,7 +39,11 @@ class SourceRefinementScenarios(unittest.TestCase):
     def test_repeated_source_rejects_change_that_single_sample_cannot_detect(self):
         def changing_source():
             readings = iter((b'0 1000 1\n', b'0 2000 1\n'))
-            return lambda name: next(readings) if name == 'uid_map' else b'0 3000 1\n'
+            def read(name):
+                if name == 'uid_map':
+                    return next(readings)
+                return b'0 3000 1\n'
+            return read
         self.assertEqual(1000, next(read_maps(changing_source()).uid_rows).outside)
         with self.assertRaises(IdentityError):
             host.consistent_maps(changing_source())

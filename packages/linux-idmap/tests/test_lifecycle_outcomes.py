@@ -66,6 +66,7 @@ class LifecycleOutcomeTests(unittest.TestCase):
                 actual = [failure.problem.category, *(p.category for p in failure.retirement.problems)]
                 self.assertEqual(expected, actual)
                 self.assertEqual(state, failure.retirement.state)
+                # silent-defaults: allow-contract -- The expected first failure follows operation order.
                 first = measurement if measure else removal if remove else closing if close else None
                 if first is not None:
                     self.assertIs(first, failure.__cause__)
@@ -277,6 +278,7 @@ class LifecycleOutcomeTests(unittest.TestCase):
                     nonlocal inspections
                     inspections += 1
                     if inspections == 4:
+                        # silent-defaults: allow-contract -- Model either auto-removal or a stopped probe.
                         engine.container = None if auto_removed else replace(engine.container, running=False, pid=0)
                 engine.on_inspect = exit_probe
                 guard.observe = Mock(wraps=guard.observe)

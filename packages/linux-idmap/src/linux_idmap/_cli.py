@@ -35,9 +35,8 @@ def _parser():
     parser.add_argument("--user-uid", required=True, type=Identifier.of)
     parser.add_argument("--user-gid", required=True, type=Identifier.of)
     parser.add_argument("--userns", choices=("default", "host"))
-    # silent-defaults: allow-contract -- No projection options means no requested IDs; argparse copies each list before appending; tests/test_cli.py::CliTests.test_no_requested_ids_means_no_projections.
-    parser.add_argument("--uid", action="append", type=Identifier.of, default=[])
-    parser.add_argument("--gid", action="append", type=Identifier.of, default=[])
+    parser.add_argument("--uid", action="append", type=Identifier.of)
+    parser.add_argument("--gid", action="append", type=Identifier.of)
     parser.add_argument("--values", action="store_true", help="print only projected decimal IDs for shell callers")
     parser.add_argument("--timeout", type=float, help="override the measurement time bound in seconds")
     return parser
@@ -55,11 +54,15 @@ def _emit(payload: dict, *, values_mode: bool):
 def main(argv: list[str] | None = None) -> int:
     handlers = {}
     arguments = list(sys.argv[1:] if argv is None else argv)
-    # silent-defaults: allow-contract -- --values routes parse errors to stderr before parsing can complete; no numbers are emitted on failure; tests/test_cli.py::CliTests.test_values_parse_failure_keeps_stdout_empty.
+    # --values routes parse errors to stderr before parsing can complete; no numbers are emitted on failure; tests/test_cli.py::CliTests.test_values_parse_failure_keeps_stdout_empty.
     values_mode = "--values" in arguments
     try:
         options = _parser().parse_args(arguments)
-        # silent-defaults: allow-contract -- After valid parsing the boolean switch, rather than raw tokens, owns output routing; tests/test_cli.py::CliTests.test_values_are_only_requested_decimal_ids_in_order.
+        if options.uid is None:
+            options.uid = []
+        if options.gid is None:
+            options.gid = []
+        # After valid parsing the boolean switch, rather than raw tokens, owns output routing; tests/test_cli.py::CliTests.test_values_are_only_requested_decimal_ids_in_order.
         values_mode = options.values
         if len(options.uid) + len(options.gid) > 512:
             raise StepError("invalid-policy", "request at most 512 projected identities")

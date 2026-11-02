@@ -40,6 +40,7 @@ class ProbeSpec:
 
     def create_arguments(self) -> list[str]:
         request = self.request
+        # silent-defaults: allow-contract -- Default namespace mode adds no Docker option.
         namespace = ["--userns=host"] if request.userns_mode == "host" else []
         return ["container", "create", "--pull=never", "--name", self.name,
                 "--label", OWNER_LABEL + "=" + OWNER, "--label", TOKEN_LABEL + "=" + self.token,

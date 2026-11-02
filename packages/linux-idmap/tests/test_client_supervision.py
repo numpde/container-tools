@@ -22,12 +22,14 @@ class ClientSupervisionTests(unittest.TestCase):
             with self.subTest(status=status, invalid_utf8=invalid_utf8), tempfile.TemporaryDirectory() as directory:
                 pidfile = Path(directory) / 'descendant'
                 token = 'idmap-private-client-' + Path(directory).name
+                # silent-defaults: allow-contract -- Only the invalid UTF-8 case emits the invalid byte.
+                output = bytes([255]) if invalid_utf8 else b''
                 program = (
                     'import os,pathlib,subprocess,sys; '
                     f'child=subprocess.Popen([sys.executable,"-I","-S","-c","import time;time.sleep(5)",{token!r}],'
                     'stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL); '
                     f'pathlib.Path({str(pidfile)!r}).write_text(str(child.pid)); '
-                    f'os.write(1, {bytes([255]) if invalid_utf8 else b""!r}); sys.exit({status})'
+                    f'os.write(1, {output!r}); sys.exit({status})'
                 )
                 signal_group = os.killpg
                 def kill_before_reap(pid, number):
@@ -64,6 +66,7 @@ class ClientSupervisionTests(unittest.TestCase):
                         try:
                             if token.encode() in Path(f'/proc/{pid}/cmdline').read_bytes().split(b'\0'):
                                 os.kill(pid, signal.SIGKILL)
+                        # silent-defaults: allow-contract -- A vanished fixture process needs no signal.
                         except (FileNotFoundError, ProcessLookupError):
                             pass
 

@@ -53,6 +53,7 @@ class CliTests(unittest.TestCase):
     def test_policy_refusal_uses_the_same_failure_shape_as_operation_errors(self):
         for values in (False, True):
             with self.subTest(values=values):
+                # silent-defaults: allow-contract -- The fixture exercises both output modes.
                 code, out, err = self.call(['--values'] if values else [])
                 payload = json.loads(err if values else out)
                 self.assertEqual(2, code)
