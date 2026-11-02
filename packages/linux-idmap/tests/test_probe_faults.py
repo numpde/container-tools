@@ -9,7 +9,6 @@ import json
 import os
 from pathlib import Path
 import signal
-import shlex
 import sys
 import tempfile
 import threading
@@ -34,11 +33,9 @@ class OperationFaultTests(unittest.TestCase):
         self.bin = self.root / "bin"
         self.bin.mkdir()
         fixture = Path(__file__).parent / "fixtures" / "fake_docker.py"
-        launcher = self.bin / "docker"
-        # Exercise this matrix interpreter, without ambient site/.pth startup.
-        launcher.write_text(f"#!/usr/bin/env -S {shlex.quote(sys.executable)} -I -S -B\n"
-                            + fixture.read_text().split("\n", 1)[1])
-        launcher.chmod(0o755)
+        # Execute the read-only fixture while temporary state remains on noexec /tmp.
+        (self.bin / "docker").symlink_to(fixture)
+        (self.bin / "python3").symlink_to(sys.executable)
         (self.root / "engine.sock").touch()
         def fixture_socket_identity(path):
             metadata = Path(path).stat()

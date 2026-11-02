@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -I -S -B
 """A tiny persistent engine model, deliberately separate from client replies.
 
 This is not a Docker emulator or real-engine qualification. It exercises the
