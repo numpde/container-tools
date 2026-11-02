@@ -65,6 +65,19 @@ class IdMap:
                 return Identifier(row.outside + identifier - row.inside)
         raise ValueError("identifier is not mapped")
 
+    def translate_inverse(self, identifier: int) -> Identifier:
+        """Return the unique inside ID for an outside ID, or raise ValueError."""
+        identifier = Identifier(identifier)
+        inside = None
+        for row in self.rows:
+            if row.outside <= identifier < row.outside + row.length:
+                if inside is not None:
+                    raise ValueError(f"Cannot translate outside ID {identifier}: multiple ranges contain it")
+                inside = row.inside + identifier - row.outside
+        if inside is None:
+            raise ValueError(f"Cannot translate outside ID {identifier}: it is not mapped")
+        return Identifier(inside)
+
 
 @dataclass(frozen=True)
 class MapRows:

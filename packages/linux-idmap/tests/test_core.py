@@ -59,6 +59,42 @@ class CoreTests(unittest.TestCase):
         self.assertEqual([1002, 1000, 1002, 1001],
                          [mapping.translate(identifier) for identifier in (2, 0, 2, 1)])
 
+    def test_inverse_translation_round_trips_across_ranges_and_boundaries(self):
+        mapping = IdMap([IdRange(7, 2000, 3), IdRange(0, 1000, 2)])
+        for inside, outside in ((0, 1000), (1, 1001), (7, 2000), (9, 2002)):
+            with self.subTest(inside=inside, outside=outside):
+                self.assertEqual(outside, mapping.translate(inside))
+                self.assertEqual(inside, mapping.translate_inverse(outside))
+                self.assertIsInstance(mapping.translate_inverse(outside), Identifier)
+        for outside in (999, 1002, 1999, 2003):
+            with self.subTest(outside=outside), self.assertRaisesRegex(ValueError, "not mapped"):
+                mapping.translate_inverse(outside)
+
+    def test_inverse_translation_rejects_invalid_or_ambiguous_ids(self):
+        mapping = IdMap([IdRange(0, 1000, 2), IdRange(8, 1001, 2)])
+        for identifier in (True, -1, 2**32 - 1, '1000'):
+            with self.subTest(identifier=identifier), self.assertRaises(ValueError):
+                mapping.translate_inverse(identifier)
+        with self.assertRaisesRegex(ValueError, "multiple ranges"):
+            mapping.translate_inverse(1001)
+        self.assertEqual(0, mapping.translate_inverse(1000))
+        self.assertEqual(9, mapping.translate_inverse(1002))
+        with self.assertRaisesRegex(ValueError, "multiple ranges"):
+            IdMap([IdRange(0, 1000, 1), IdRange(0, 1000, 1)]).translate_inverse(1000)
+        with self.assertRaises(ValueError):
+            IdMap([IdRange(2**32 - 1, 1000, 1)]).translate_inverse(1000)
+        with self.assertRaisesRegex(ValueError, "multiple ranges"):
+            IdMap([IdRange(2**32 - 1, 1000, 1), IdRange(0, 1000, 1)]).translate_inverse(1000)
+        self.assertEqual(0, IdMap([IdRange(0, 0, 1)]).translate_inverse(0))
+        self.assertEqual(2**32 - 2, IdMap([IdRange(2**32 - 2, 2**32 - 2, 1)]).translate_inverse(2**32 - 2))
+
+    def test_inverse_translation_uses_current_rows(self):
+        mapping = IdMap([IdRange(0, 1000, 1)])
+        self.assertEqual(0, mapping.translate_inverse(1000))
+        mapping.rows.append(IdRange(1, 1000, 1))
+        with self.assertRaisesRegex(ValueError, "multiple ranges"):
+            mapping.translate_inverse(1000)
+
     def test_mapping_does_not_keep_the_callers_mutable_row_list(self):
         rows = [IdRange(0, 1000, 1)]
         mapping = IdMap(rows)

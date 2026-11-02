@@ -24,12 +24,14 @@ print(list(maps.uid_rows))
 print(list(maps.gid_rows))
 
 mapping = IdMap([IdRange(inside=0, outside=1000, length=2)])
-print(mapping.translate(1))  # 1001
+print(mapping.translate(1))             # 1001
+print(mapping.translate_inverse(1001))  # 1
 ```
 
 Raw rows use the kernel's reported coordinates, not necessarily host coordinates.
 `IdMap` requires caller-established, non-overlapping affine ranges; it does not
 validate their overall consistency. Invalid or unmapped IDs raise `ValueError`.
+`translate_inverse` also rejects an outside ID contained in more than one range.
 
 For checked host-coordinate maps of an existing process:
 
@@ -38,10 +40,13 @@ import os
 from linux_idmap.process import observe_host_process
 
 maps = observe_host_process(os.getpid())
-print(maps.uid_map.translate(os.getuid()), maps.gid_map.translate(os.getgid()))
+print(maps.uid_map.translate_inverse(os.getuid()), maps.gid_map.translate_inverse(os.getgid()))
 ```
 
-Run in the initial user namespace with readable `/proc`. Failed identity checks
+These inverse lookups find IDs inside the observed process namespace corresponding
+to the caller's host UID and GID. This example observes the calling process itself;
+observe another process to inspect its namespace. Run in the initial user namespace
+with readable `/proc`. Failed identity checks
 raise `IdentityError`; the result is an observation, not a lock on future state.
 
 ## Probe an image before deployment
