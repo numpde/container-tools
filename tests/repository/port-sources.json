@@ -502,6 +502,20 @@
         "RepositoryConventionTests.test_batch_worker_target_invokes_only_the_fixed_qualification_case",
         "RepositoryConventionTests.test_public_make_targets_are_hierarchical_and_test_aggregates_both_suites"
       ]
+    },
+    {
+      "source": "repository_checks/test_scientific_lint.py",
+      "target": "tests/repository/test_scientific_lint.py",
+      "sha256": "7bc87416215c14d594df9e96ffcfc9b9284670694b4f0e22e5ed09f8f04a2038",
+      "adaptation": "Relocated imports; caller identity marker and source/entrypoint inventories adapted locally.",
+      "mode": "100644",
+      "test_methods": [
+        "ImportOrderDetectionTests.test_only_canonical_early_guard_may_precede_import_section",
+        "ScientificLintTests.test_full_selected_ruff_rule_policy",
+        "ScientificLintTests.test_guard_exception_retains_late_module_import_rejection",
+        "ScientificLintTests.test_provider_core_import_order",
+        "ScientificLintTests.test_ruff_format_policy"
+      ]
     }
   ],
   "external_owner_sources": [

@@ -48,5 +48,20 @@
     "target": "tests/repository/test_conventions.py",
     "method": "test_installed_core_requires_its_own_portable_guard",
     "disposition": "The standalone package is intentionally runnable on the host; provider-core is outside this repository."
+  },
+  {
+    "target": "tests/repository/test_scientific_lint.py",
+    "method": "test_full_selected_ruff_rule_policy",
+    "disposition": "User assigns Ruff to the separate ruffer repository. Local custom import-order checks remain."
+  },
+  {
+    "target": "tests/repository/test_scientific_lint.py",
+    "method": "test_ruff_format_policy",
+    "disposition": "User assigns Ruff to the separate ruffer repository. Local custom import-order checks remain."
+  },
+  {
+    "target": "tests/repository/test_scientific_lint.py",
+    "method": "test_provider_core_import_order",
+    "disposition": "Replaced by test_linux_idmap_import_order, which scans the actual standalone package and refuses an empty inventory."
   }
 ]

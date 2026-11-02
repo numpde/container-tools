@@ -26,7 +26,7 @@ def late_module_imports(source):
     Ruffer formatting workflow.
     """
     statements = ast.parse(source).body
-    guarded = has_early_guard(source) or has_early_guard(source, guard_module="provider_core.container_guard")
+    guarded = has_early_guard(source)
     imports_ended = False
     findings = []
     for index, statement in enumerate(statements):
@@ -64,14 +64,13 @@ class ImportOrderDetectionTests(unittest.TestCase):
         self.assertEqual([3], late_module_imports("import os\nwork()\nimport pickle\n"))
         self.assertEqual([2], late_module_imports("require_container()\nimport pickle\n"))
         self.assertEqual([4], late_module_imports(guard + "require_container()\nimport pickle\n"))
-        core_guard = "from provider_core.container_guard import require_container\nrequire_container()\n"
-        self.assertEqual([], late_module_imports(core_guard + "import json\n"))
-        self.assertEqual([4], late_module_imports(core_guard + "work()\nimport json\n"))
+
 
 
 class ScientificLintTests(unittest.TestCase):
-    def test_provider_core_import_order(self):
-        paths = sorted((ROOT / "src").rglob("*.py"))
+    def test_linux_idmap_import_order(self):
+        paths = sorted((ROOT / "packages/linux-idmap/src").rglob("*.py"))
+        self.assertTrue(paths, msg="linux-idmap source inventory is empty")
         findings = [
             f"{path.relative_to(ROOT)}:{line}: module import follows operational statements"
             for path in paths
