@@ -1,0 +1,15 @@
+{
+  "checked_at": "2026-11-02T21:43:49+00:00",
+  "scope": "Exact-version PyPI advisory metadata; not a complete security audit",
+  "inputs_sha256": {
+    "requirements/linux-idmap-build.lock": "17f3611344005a7c2d54982a79bded4f2b4fb9013511f8f9f4edb432745c1514"
+  },
+  "packages": [
+    {
+      "name": "setuptools",
+      "url": "https://pypi.org/pypi/setuptools/84.1.0/json",
+      "version": "84.1.0",
+      "vulnerabilities": []
+    }
+  ]
+}
