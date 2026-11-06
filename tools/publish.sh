@@ -53,6 +53,20 @@ private_directory() {
         && -d $1 && ! -L $1 && $(stat -c '%u:%a' -- "$1") == "$(id -u):700" ]] \
         || fail 'Release inputs require a canonical caller-owned mode 0700 directory below root without mount delimiters.'
 }
+# The documented default is local release work, never committed source.
+# Caller overrides stay explicit and must already exist as private directories.
+default_release_path() {
+    local base="$root/release-artifacts" directory="$root/release-artifacts/$tag"
+    if [[ $action == prepare && ! -e $base && ! -L $base ]]; then
+        mkdir -m 700 -- "$base" || fail 'Cannot create private release-artifacts directory.'
+    fi
+    private_directory "$base"
+    if [[ $action == prepare && ! -e $directory && ! -L $directory ]]; then
+        mkdir -m 700 -- "$directory" || fail 'Cannot create private versioned release-artifacts directory.'
+    fi
+    private_directory "$directory"
+    printf '%s\n' "$directory"
+}
 require_clean_source() {
     local checkout_status
     checkout_status=$(git status --porcelain) || fail 'Cannot inspect Git checkout status; no clean-source claim was established.'
@@ -87,11 +101,15 @@ manifest=linux_idmap-$version-sha256.json
 names=("$wheel" "$sdist" "$lock" "$record" "$manifest")
 
 if [[ $action == prepare ]]; then
-    [[ -v OUTPUT_INPUT_ORIGIN && $OUTPUT_INPUT_ORIGIN == 'command line' && -v OUTPUT_INPUT && -n $OUTPUT_INPUT ]] \
-        || fail 'Select OUTPUT as an existing empty private directory on the Make command line.'
-    private_directory "$OUTPUT_INPUT"
-    [[ -z $(find "$OUTPUT_INPUT" -mindepth 1 -maxdepth 1 -print -quit) ]] || fail 'Release preparation OUTPUT must be empty; preserve preceding evidence separately.'
-    scratch=$OUTPUT_INPUT
+    if [[ -v OUTPUT_INPUT_ORIGIN && $OUTPUT_INPUT_ORIGIN == 'command line' ]]; then
+        [[ -v OUTPUT_INPUT && -n $OUTPUT_INPUT ]] \
+            || fail 'OUTPUT cannot be empty; select an existing private directory or omit OUTPUT for release-artifacts/<tag>.'
+        scratch=$OUTPUT_INPUT
+        private_directory "$scratch"
+    else
+        scratch=$(default_release_path)
+    fi
+    [[ -z $(find "$scratch" -mindepth 1 -maxdepth 1 -print -quit) ]] || fail 'Release preparation OUTPUT must be empty; preserve preceding evidence separately.'
     source "$root/tools/wheelhouse_path.sh"
     select_wheelhouse
     require_wheelhouse_pool
@@ -103,14 +121,22 @@ if [[ $action == prepare ]]; then
     [[ -f $scratch/artifacts/$wheel && -f $scratch/artifacts/$sdist ]] || fail 'TAG must match the built package version.'
     nested 'exact release artifact qualification' env WHEELHOUSE_INPUT_ORIGIN='command line' WHEELHOUSE_INPUT="$wheelhouse_directory" ARTIFACTS_INPUT_ORIGIN='command line' ARTIFACTS_INPUT="$scratch/artifacts" bash "$root/tools/linux_idmap.sh" package > "$scratch/release-test.log" 2>&1
     require_unchanged_source
-    printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then use publish/release TAG=%s ARTIFACTS=%q.\n' "$scratch" "$tag" "$scratch"
+    if [[ -v OUTPUT_INPUT_ORIGIN && $OUTPUT_INPUT_ORIGIN == 'command line' ]]; then
+        printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then run make publish/release TAG=%s ARTIFACTS=%q.\n' "$scratch" "$tag" "$scratch"
+    else
+        printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then run make publish/release TAG=%s.\n' "$scratch" "$tag"
+    fi
     exit
 fi
 
-[[ -v ARTIFACTS_INPUT_ORIGIN && $ARTIFACTS_INPUT_ORIGIN == 'command line' && -v ARTIFACTS_INPUT && -n $ARTIFACTS_INPUT ]] \
-    || fail 'Select ARTIFACTS as the reviewed publish/prepare output directory on the Make command line.'
-private_directory "$ARTIFACTS_INPUT"
-publication_inputs=$ARTIFACTS_INPUT
+if [[ -v ARTIFACTS_INPUT_ORIGIN && $ARTIFACTS_INPUT_ORIGIN == 'command line' ]]; then
+    [[ -v ARTIFACTS_INPUT && -n $ARTIFACTS_INPUT ]] \
+        || fail 'ARTIFACTS cannot be empty; select a reviewed private directory or omit ARTIFACTS for release-artifacts/<tag>.'
+    publication_inputs=$ARTIFACTS_INPUT
+    private_directory "$publication_inputs"
+else
+    publication_inputs=$(default_release_path)
+fi
 umask 077
 scratch=$(mktemp -d -t container-tools-publication.XXXXXXXX)
 mkdir -m 700 -- "$scratch/assets"

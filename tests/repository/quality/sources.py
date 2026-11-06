@@ -20,6 +20,7 @@ SKIP_DIRS = {
     ".codex",
     ".aws",
     "secrets",
+    "release-artifacts",
     "node_modules",
     "dependencies",
     ".venv",

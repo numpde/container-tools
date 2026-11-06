@@ -34,7 +34,7 @@ ROOT_ENTRY_MANIFEST = Path("/repository-source-inventory/root-entries")
 # The coordinator explicitly keeps checkout control, credentials and writable
 # acquisition/runtime state outside source-check authority. Capturing their
 # names in the manifest proves classification without exposing their contents.
-PRIVATE_ROOT_ENTRIES = frozenset({".git", ".agents", ".codex", ".aws", "secrets"})
+PRIVATE_ROOT_ENTRIES = frozenset({".git", ".agents", ".codex", ".aws", "secrets", "release-artifacts"})
 
 
 def root_entry_visibility_findings(manifest, root):
@@ -136,6 +136,14 @@ class SourceInventoryUnitTests(unittest.TestCase):
                 ],
                 root_entry_visibility_findings(manifest, root),
             )
+
+    def test_release_artifacts_are_not_public_source_roots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "release-artifacts").mkdir()
+            manifest = "d\trelease-artifacts\0"
+            self.assertEqual([], root_entry_visibility_findings(manifest, root))
+            self.assertIn("release-artifacts", PRIVATE_ROOT_ENTRIES)
 
     def test_root_visibility_rejects_malformed_duplicate_and_mismatched_records(self):
         with tempfile.TemporaryDirectory() as directory:

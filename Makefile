@@ -85,8 +85,8 @@ help:
 	  'make packages/linux-idmap/check WHEELHOUSE=... Verify pinned build dependencies offline.' \
 	  'make package/build WHEELHOUSE=... OUTPUT=... Build committed source into an empty private directory.' \
 	  'make tests/package WHEELHOUSE=... ARTIFACTS=... Qualify the exact release artifacts.' \
-	  'make publish/prepare TAG=vX.Y.Z WHEELHOUSE=... OUTPUT=... Prepare artifacts and authored release notes.' \
-	  'make publish/release TAG=vX.Y.Z ARTIFACTS=... Publish reviewed inputs through a verified draft.'
+	  'make publish/prepare TAG=vX.Y.Z WHEELHOUSE=... [OUTPUT=...] Prepare in release-artifacts/<tag> by default.' \
+	  'make publish/release TAG=vX.Y.Z [ARTIFACTS=...] Publish the reviewed release-artifacts/<tag> by default.'
 
 tests/unit/linux-idmap:
 	bash tools/repository.sh tests/unit/linux-idmap

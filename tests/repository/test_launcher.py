@@ -249,6 +249,8 @@ class LauncherTests(unittest.TestCase):
             for name in ("tools", "requirements", "containers"):
                 shutil.copytree(ROOT / name, root / name)
             (root / "future-source").mkdir()
+            (root / "release-artifacts/v0.2.0").mkdir(parents=True)
+            (root / "release-artifacts/v0.2.0/secret.txt").write_text("private")
             (root / ".work").mkdir()
             (root / ".aws").mkdir()
             launcher = root / "tools/repository.sh"
@@ -260,6 +262,7 @@ class LauncherTests(unittest.TestCase):
             arguments = shlex.split(result.stdout)
             self.assertIn(f"type=bind,src={root}/future-source,dst=/workspace/future-source,readonly", arguments)
             self.assertNotIn(f"type=bind,src={root}/.aws,dst=/workspace/.aws,readonly", arguments)
+            self.assertFalse(any("release-artifacts" in argument for argument in arguments))
             self.assertIn(f"type=bind,src={root}/.work,dst=/workspace/.work,readonly", arguments)
             (root / "linked").symlink_to(root / "future-source", target_is_directory=True)
             result = subprocess.run(command, env=environment, capture_output=True, text=True, check=False)

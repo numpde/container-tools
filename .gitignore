@@ -5,6 +5,7 @@
 /config/deployments/**
 !/config/deployments/**/
 !/config/deployments/**/*.toml.example
+/release-artifacts/
 /secrets/**
 !/secrets/
 !/secrets/README.md

@@ -18,19 +18,21 @@ make tests DOCKER_CONTEXT=generic
 
 ## Release
 
-Commit the package version and exactly one authored note matching the selected tag, `notes/*_release_vX.Y.Z.md`. The tag's version must match the package version. Older release notes may remain; the entire checkout must be clean. Acquire the pinned build dependency, then create an empty, caller-owned mode 0700 output directory at a canonical absolute path:
+Commit the package version and exactly one authored note matching the selected tag, `notes/*_release_vX.Y.Z.md`. The tag's version must match the package version. Older release notes may remain; the checkout must be clean.
+
+By default, `publish/prepare` creates **`release-artifacts/vX.Y.Z/` in this repository**. The parent and version directory are caller-owned, mode `0700`, excluded from Git and repository-check mounts. A previously prepared or nonempty directory is never overwritten. Acquire the pinned build dependency, then prepare:
 
 ```sh
 make packages/linux-idmap/download DOCKER_CONTEXT=generic WHEELHOUSE=/path/to/wheelhouse NETWORK_INTERFACE=system
-mkdir -m 700 /path/to/output
+make publish/prepare DOCKER_CONTEXT=generic TAG=vX.Y.Z WHEELHOUSE=/path/to/wheelhouse
 ```
 
-Prepare the release using that wheelhouse and output directory:
+Review `release-artifacts/vX.Y.Z/artifacts/`, the build/test logs and the authored note. After installing `gh` and `jq` and configuring GitHub access, publish the **same reviewed directory** without rebuilding it:
 
 ```sh
-make publish/prepare DOCKER_CONTEXT=generic TAG=vX.Y.Z WHEELHOUSE=/path/to/wheelhouse OUTPUT=/path/to/output
+make publish/release TAG=vX.Y.Z
 ```
 
-Review the five artifacts, build and test logs, and release note in that directory. To publish the reviewed files, install `gh` and `jq` on the host, configure GitHub access, and run `make publish/release TAG=vX.Y.Z ARTIFACTS=/path/to/output`. Publication checks the committed source, note, and qualification hashes, uploads a draft, downloads its files for byte comparison, and then publishes it. It does not rebuild the package.
+Both commands accept an explicit override: `OUTPUT=/canonical/empty/private/directory` for preparation, or `ARTIFACTS=/canonical/reviewed/private/directory` for publication. Explicit paths must already exist, be caller-owned and mode `0700`. The default directory must be absent or empty for preparation and present for publication. Publication verifies committed source, qualification hashes and downloaded draft assets byte-for-byte before releasing them. Preserve local artifacts until publication is confirmed; afterward they can be removed manually.
 
 The build dependency advisory snapshot in `requirements/linux-idmap-build-advisories.json` records an exact-version PyPI check at its stated time; it is not a current or complete security audit.
