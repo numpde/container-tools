@@ -127,24 +127,111 @@ class LauncherTests(unittest.TestCase):
         self.assertNotIn(b"remote-test", output)
         self.assertIn(b"--host unix:///run/user/1000/docker.sock", output)
 
-    def test_multiple_make_goals_resolve_the_context_once(self):
+    def test_make_introspection_has_no_docker_side_effects(self):
+        fixture = ROOT / "tests/repository/fixtures/docker-context"
+        for arguments in (
+            ("-qp", "checks/base-image/download"),
+            ("-qp", "tests/repository/command"),
+            ("--question", "tests"),
+            ("--dry-run", "checks/base-image/download"),
+            ("--dry-run", "checks/prepare"),
+            ("--dry-run", "package/build"),
+            ("--dry-run", "tests"),
+            ("--dry-run", "publish/prepare"),
+        ):
+            with self.subTest(arguments=arguments), tempfile.TemporaryDirectory() as directory:
+                log = Path(directory) / "inspections"
+                environment = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}",
+                    "FAKE_CONTEXT_LOG": str(log)}
+                for name in ("CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT",
+                             "DOCKER_CONTEXT_INPUT_ORIGIN", "DOCKER_CONTEXT_INPUT"):
+                    environment.pop(name, None)
+                result = subprocess.run(
+                    ["make", "--no-print-directory", *arguments],
+                    cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
+                    start_new_session=True, capture_output=True, text=True,
+                    check=False, timeout=8,
+                )
+                self.assertIn(result.returncode, (0, 1), result.stderr)
+                self.assertNotIn("Select a local Docker context (no default)", result.stderr)
+                self.assertFalse(log.exists(), f"Make discovery inspected Docker: {arguments}")
+
+    def test_interactive_database_query_does_not_open_docker_menu(self):
+        # Completion interrogates Make's target database with a live terminal.
+        fixture = ROOT / "tests/repository/fixtures/docker-context"
         with tempfile.TemporaryDirectory() as directory:
-            log = Path(directory) / "context-inspections"
-            fixture = ROOT / "tests/repository/fixtures/docker-context"
-            environment = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}", "FAKE_CONTEXT_LOG": str(log)}
-            result = subprocess.run(
-                ["make", "--no-print-directory", "--dry-run", "tests/repository/command", "checks/image/build", "DOCKER_CONTEXT=local-test"],
-                cwd=ROOT, env=environment, capture_output=True, text=True, check=False,
+            log = Path(directory) / "inspections"
+            environment = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}",
+                "FAKE_CONTEXT_LOG": str(log)}
+            for name in ("CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT",
+                         "DOCKER_CONTEXT_INPUT_ORIGIN", "DOCKER_CONTEXT_INPUT"):
+                environment.pop(name, None)
+            pid, terminal = pty.fork()
+            if pid == 0:
+                os.chdir(ROOT)
+                os.execvpe("make", ["make", "--no-print-directory", "-qp",
+                                    "checks/base-image/download"], environment)
+            received = bytearray()
+            status = None
+            deadline = time.monotonic() + 6
+            try:
+                while time.monotonic() < deadline:
+                    if select.select([terminal], [], [], 0.1)[0]:
+                        try:
+                            received.extend(os.read(terminal, 65536))
+                        except OSError:
+                            pass
+                    finished, candidate = os.waitpid(pid, os.WNOHANG)
+                    if finished:
+                        status = candidate
+                        break
+                if status is None:
+                    os.killpg(pid, signal.SIGKILL)
+                    os.waitpid(pid, 0)
+            finally:
+                os.close(terminal)
+            self.assertIsNotNone(status, "Make target discovery blocked on interactive input")
+            self.assertTrue(os.WIFEXITED(status), received[-2000:].decode(errors="replace"))
+            self.assertNotIn(b"Select a local Docker context (no default)", received)
+            self.assertNotIn(b"Choice [", received)
+            self.assertFalse(log.exists(), "Make database inspection called Docker")
+
+    def test_tests_aggregate_resolves_context_once_at_execution(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "tools").mkdir()
+            shutil.copyfile(ROOT / "Makefile", root / "Makefile")
+            shutil.copyfile(ROOT / "tools/docker_context.sh", root / "tools/docker_context.sh")
+            (root / "tools/repository.sh").write_text(
+                'source tools/docker_context.sh; select_docker_context\n'
+                'printf "%s %s\\n" "$1" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT" >> "$FAKE_TEST_LOG"\n'
             )
-            self.assertEqual(0, result.returncode, msg=result.stderr)
-            self.assertEqual(["inspect"], log.read_text().splitlines())
+            inspected = root / "inspections"
+            logged = root / "suites"
+            fixture = ROOT / "tests/repository/fixtures/docker-context"
+            environment = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}",
+                "FAKE_CONTEXT_LOG": str(inspected), "FAKE_TEST_LOG": str(logged)}
+            result = subprocess.run(
+                ["make", "--no-print-directory", "tests", "DOCKER_CONTEXT=local-test"],
+                cwd=root, env=environment, capture_output=True, text=True,
+                check=False, timeout=8,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(["inspect"], inspected.read_text().splitlines())
+            self.assertEqual([
+                "tests/repository unix:///run/user/1000/docker.sock",
+                "tests/unit/linux-idmap unix:///run/user/1000/docker.sock",
+            ], logged.read_text().splitlines())
 
     def test_make_passes_selected_endpoint_to_checker_prepare(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             shutil.copytree(ROOT / "tools", root / "tools")
             shutil.copyfile(ROOT / "Makefile", root / "Makefile")
-            (root / "tools/checker.sh").write_text('printf "selected=%s\\n" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"\n')
+            (root / "tools/checker.sh").write_text(
+                'source tools/docker_context.sh; select_docker_context\n'
+                'printf "selected=%s\\n" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"\n'
+            )
             log = root / "context-inspections"
             fixture = ROOT / "tests/repository/fixtures/docker-context"
             env = os.environ | {"PATH": f"{fixture}:{os.environ['PATH']}", "FAKE_CONTEXT_LOG": str(log)}

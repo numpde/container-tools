@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Select one local engine for the whole Make operation and its child processes.
+# Select one local engine in the executing shell and export it to child processes.
 set -euo pipefail
 select_docker_context() {
     local name endpoint listing tty_fd answer index origin

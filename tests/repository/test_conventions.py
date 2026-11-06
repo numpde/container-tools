@@ -99,7 +99,12 @@ class RepositoryConventionTests(unittest.TestCase):
             if name not in ("tests", "help"):
                 self.assertRegex(name, r"^[a-z][a-z0-9_-]*(/[a-z][a-z0-9_-]*)+$")
         self.assertTrue({"tests/repository"} <= targets.keys())
-        self.assertTrue({"tests/repository"} <= set(targets["tests"]))
+        self.assertIn("tests/unit/linux-idmap", targets)
+        # The aggregate executes both suites in one shell after selecting its
+        # engine, rather than invoking separate prompts for each prerequisite.
+        aggregate = (ROOT / "Makefile").read_text()
+        self.assertIn("bash tools/repository.sh tests/repository", aggregate)
+        self.assertIn("bash tools/repository.sh tests/unit/linux-idmap", aggregate)
 
 
 class ConventionDetectionTests(unittest.TestCase):

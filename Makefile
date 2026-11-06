@@ -12,19 +12,10 @@ override DOCKER_CONTEXT_INPUT := $(value DOCKER_CONTEXT)
 export DOCKER_CONTEXT_INPUT
 endif
 
-# Select once for every Docker goal in this invocation. Help and publication
-# use no Docker; child processes inherit the captured endpoint.
-ifneq ($(strip $(filter-out help publish/release,$(MAKECMDGOALS))),)
-ifeq ($(origin DOCKER_CONTEXT),command line)
-docker_context_quote = '$(subst ','"'"',$(1))'
-override export CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT := $(shell env -u CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT -u DOCKER_CONTEXT_INPUT -u DOCKER_CONTEXT_INPUT_ORIGIN DOCKER_CONTEXT_INPUT_ORIGIN='command line' DOCKER_CONTEXT_INPUT=$(call docker_context_quote,$(value DOCKER_CONTEXT)) bash tools/docker_context.sh --endpoint)
-else
-override export CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT := $(shell env -u CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT -u DOCKER_CONTEXT_INPUT -u DOCKER_CONTEXT_INPUT_ORIGIN bash tools/docker_context.sh --endpoint)
-endif
-ifeq ($(strip $(CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT)),)
-$(error Select a local Docker context for this operation)
-endif
-endif
+# Docker context selection is owned by executing launchers, never Make parsing.
+# Target completion, --print-data-base, --question and --dry-run must not open
+# /dev/tty or inspect Docker. Runtime scripts share the selected endpoint with
+# their children through CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT.
 
 unexport NETWORK_INTERFACE
 unexport NETWORK_INTERFACE_INPUT
@@ -115,7 +106,12 @@ checks/image/build:
 checks/prepare:
 	bash tools/checker.sh prepare
 
-tests: tests/repository tests/unit/linux-idmap
+# One execution shell owns the selected engine for both test campaigns.
+# Running independent goals separately remains two independent operations.
+tests:
+	@source tools/docker_context.sh; select_docker_context; \
+	  bash tools/repository.sh tests/repository; \
+	  bash tools/repository.sh tests/unit/linux-idmap
 
 tests/repository:
 	bash tools/repository.sh tests/repository
