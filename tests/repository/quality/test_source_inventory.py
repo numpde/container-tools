@@ -141,7 +141,7 @@ class SourceInventoryUnitTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "release-artifacts").mkdir()
-            manifest = "d\\trelease-artifacts\\0"
+            manifest = "d\trelease-artifacts\0"
             self.assertEqual([], root_entry_visibility_findings(manifest, root))
             self.assertIn("release-artifacts", PRIVATE_ROOT_ENTRIES)
 
