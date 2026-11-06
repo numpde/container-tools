@@ -204,7 +204,7 @@ class LauncherTests(unittest.TestCase):
             shutil.copyfile(ROOT / "tools/docker_context.sh", root / "tools/docker_context.sh")
             (root / "tools/repository.sh").write_text(
                 'source tools/docker_context.sh; select_docker_context\n'
-                'printf "%s %s\n" "$1" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT" >> "$FAKE_TEST_LOG"\n'
+                'printf "%s %s\\n" "$1" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT" >> "$FAKE_TEST_LOG"\n'
             )
             inspected = root / "inspections"
             logged = root / "suites"
@@ -230,7 +230,7 @@ class LauncherTests(unittest.TestCase):
             shutil.copyfile(ROOT / "Makefile", root / "Makefile")
             (root / "tools/checker.sh").write_text(
                 'source tools/docker_context.sh; select_docker_context\n'
-                'printf "selected=%s\n" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"\n'
+                'printf "selected=%s\\n" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT"\n'
             )
             log = root / "context-inspections"
             fixture = ROOT / "tests/repository/fixtures/docker-context"
