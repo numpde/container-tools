@@ -107,11 +107,11 @@ class RepositoryHygieneTest(unittest.TestCase):
     def test_make_test_scopes_run_their_supported_campaigns(self) -> None:
         # The public aggregate covers repository checks and the linux-idmap suite.
         makefile = read_text(repo_path("Makefile"))
-        self.assertEqual(
-            ("tests/repository", "tests/unit/linux-idmap"),
-            self.make_target_prereqs(makefile, "tests"),
-        )
-        self.assertEqual("", self.make_target_recipe(makefile, "tests").strip())
+        self.assertEqual((), self.make_target_prereqs(makefile, "tests"))
+        recipe = self.make_target_recipe(makefile, "tests")
+        self.assertIn("select_docker_context", recipe)
+        self.assertIn("bash tools/repository.sh tests/repository", recipe)
+        self.assertIn("bash tools/repository.sh tests/unit/linux-idmap", recipe)
 
     def test_repository_has_one_make_entrypoint(self) -> None:
         make_entrypoints = [name for name in ["GNUmakefile", "makefile", "Makefile"] if repo_path(name).exists()]
