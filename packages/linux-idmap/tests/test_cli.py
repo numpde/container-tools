@@ -124,7 +124,7 @@ class CliTests(unittest.TestCase):
             code, out, err = self.call(["--endpoint", "unix:///test.sock", "--image", "approved:local",
                 "--interpreter", "/usr/bin/python3", "--user-uid", "0", "--user-gid", "0",
                 "--inverse", "--uid", "1000", "--gid", "100", "--values"])
-        self.assertEqual((0, "0 0\\n", ""), (code, out, err))
+        self.assertEqual((0, "0 0\n", ""), (code, out, err))
 
         rootful = ProbeResult(IdMap((IdRange(0, 0, 65536),)),
                               IdMap((IdRange(0, 0, 65536),)), CID)
@@ -132,7 +132,7 @@ class CliTests(unittest.TestCase):
             code, out, err = self.call(["--endpoint", "unix:///test.sock", "--image", "approved:local",
                 "--interpreter", "/usr/bin/python3", "--user-uid", "0", "--user-gid", "0",
                 "--inverse", "--uid", "1000", "--gid", "100", "--values"])
-        self.assertEqual((0, "1000 100\\n", ""), (code, out, err))
+        self.assertEqual((0, "1000 100\n", ""), (code, out, err))
 
     def test_inverse_unmapped_refuses_success_and_keeps_stdout_empty(self):
         with patch("linux_idmap._cli.probe_identity", return_value=self.result()):
