@@ -137,6 +137,14 @@ class SourceInventoryUnitTests(unittest.TestCase):
                 root_entry_visibility_findings(manifest, root),
             )
 
+    def test_release_artifacts_are_not_public_source_roots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "release-artifacts").mkdir()
+            manifest = "d\\trelease-artifacts\\0"
+            self.assertEqual([], root_entry_visibility_findings(manifest, root))
+            self.assertIn("release-artifacts", PRIVATE_ROOT_ENTRIES)
+
     def test_root_visibility_rejects_malformed_duplicate_and_mismatched_records(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

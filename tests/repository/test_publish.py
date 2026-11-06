@@ -60,19 +60,79 @@ class PublicationTests(unittest.TestCase):
         self.trace = self.root / "calls"
         self.bin = Path("tests/fixtures/publish-tools").resolve()
 
-    def run_publisher(self, scenario, action):
+    # silent-defaults: allow-contract -- Existing tests exercise explicit paths; new release-layout tests request the documented per-tag default.
+    def run_publisher(self, scenario, action, *, default_paths=False, path_overrides=None):
+        environment = {"PATH": str(self.bin) + os.pathsep + os.defpath, "TMPDIR": str(self.root),
+                       "TAG_INPUT_ORIGIN": "command line", "TAG_INPUT": "v0.2.0",
+                       "ARTIFACTS_INPUT_ORIGIN": "command line", "ARTIFACTS_INPUT": str(self.inputs),
+                       "OUTPUT_INPUT_ORIGIN": "command line", "OUTPUT_INPUT": str(self.root / "prepared"),
+                       "WHEELHOUSE_INPUT_ORIGIN": "command line", "WHEELHOUSE_INPUT": str(self.root / "pool"),
+                       "PUBLISH_TEST_COMMITTED_NOTE": str(self.inputs / "committed-note.md"),
+                       "PUBLISH_TEST_WORKTREE_NOTE": str(self.note),
+                       "PUBLISH_TEST_MODE": scenario, "PUBLISH_TEST_TRACE": str(self.trace)}
+        if default_paths:
+            for name in ("OUTPUT_INPUT_ORIGIN", "OUTPUT_INPUT", "ARTIFACTS_INPUT_ORIGIN", "ARTIFACTS_INPUT"):
+                del environment[name]
+        if path_overrides is not None:
+            environment.update(path_overrides)
         return subprocess.run(
             ["bash", str(self.root / "tools/publish.sh"), action], cwd=self.root,
-            env={"PATH": str(self.bin) + os.pathsep + os.defpath, "TMPDIR": str(self.root),
-                 "TAG_INPUT_ORIGIN": "command line", "TAG_INPUT": "v0.2.0",
-                 "ARTIFACTS_INPUT_ORIGIN": "command line", "ARTIFACTS_INPUT": str(self.inputs),
-                 "OUTPUT_INPUT_ORIGIN": "command line", "OUTPUT_INPUT": str(self.root / "prepared"),
-                 "WHEELHOUSE_INPUT_ORIGIN": "command line", "WHEELHOUSE_INPUT": str(self.root / "pool"),
-                 "PUBLISH_TEST_COMMITTED_NOTE": str(self.inputs / "committed-note.md"),
-                 "PUBLISH_TEST_WORKTREE_NOTE": str(self.note),
-                 "PUBLISH_TEST_MODE": scenario, "PUBLISH_TEST_TRACE": str(self.trace)},
+            env=environment,
             capture_output=True, text=True, timeout=15, check=False,
         )
+
+    def test_default_release_directory_is_private_versioned_and_reused_by_publication(self):
+        (self.root / "pool").mkdir()
+        prepared = self.run_publisher("publish", "prepare", default_paths=True)
+        self.assertEqual(0, prepared.returncode, prepared.stdout + prepared.stderr)
+        directory = self.root / "release-artifacts/v0.2.0"
+        self.assertEqual(0o700, directory.parent.stat().st_mode & 0o777)
+        self.assertEqual(0o700, directory.stat().st_mode & 0o777)
+        self.assertEqual(self.note.read_bytes(), (directory / "release-notes.md").read_bytes())
+        self.assertEqual(5, len(list((directory / "artifacts").iterdir())))
+        published = self.run_publisher("publish", "release", default_paths=True)
+        self.assertEqual(0, published.returncode, published.stdout + published.stderr)
+        self.assertIn("gh release edit", self.trace.read_text())
+
+    def test_default_preparation_refuses_stale_outputs_and_unsafe_parents(self):
+        (self.root / "pool").mkdir()
+        location = self.root / "release-artifacts"
+        location.mkdir(mode=0o700)
+        version = location / "v0.2.0"
+        version.mkdir(mode=0o700)
+        sentinel = version / "keep-me.txt"
+        sentinel.write_text("existing evidence")
+        first = self.run_publisher("publish", "prepare", default_paths=True)
+        self.assertEqual(2, first.returncode)
+        self.assertIn("empty", first.stderr)
+        self.assertEqual("existing evidence", sentinel.read_text())
+        sentinel.unlink()
+        version.rmdir()
+        location.chmod(0o755)
+        exposed = self.run_publisher("publish", "prepare", default_paths=True)
+        self.assertEqual(2, exposed.returncode)
+        self.assertFalse(version.exists())
+        location.rmdir()
+        external = self.root / "external"
+        external.mkdir(mode=0o700)
+        location.symlink_to(external, target_is_directory=True)
+        linked = self.run_publisher("publish", "prepare", default_paths=True)
+        self.assertEqual(2, linked.returncode)
+        self.assertFalse((external / "v0.2.0").exists())
+
+    def test_default_publication_never_creates_missing_release_outputs(self):
+        missing = self.run_publisher("publish", "release", default_paths=True)
+        self.assertEqual(2, missing.returncode)
+        self.assertFalse((self.root / "release-artifacts").exists())
+        self.assertNotIn("gh ", self.trace.read_text()) if self.trace.exists() else None
+
+    def test_explicit_empty_release_paths_do_not_fall_back_to_default(self):
+        (self.root / "pool").mkdir()
+        for action, variable in (("prepare", "OUTPUT_INPUT"), ("release", "ARTIFACTS_INPUT")):
+            with self.subTest(action=action):
+                result = self.run_publisher("publish", action, path_overrides={variable: ""})
+                self.assertEqual(2, result.returncode, result.stderr)
+                self.assertFalse((self.root / "release-artifacts").exists())
 
     def test_prepare_keeps_authored_note_and_qualified_files_without_github_access(self):
         (self.root / "prepared").mkdir(mode=0o700)
