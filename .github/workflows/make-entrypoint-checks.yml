@@ -1,0 +1,82 @@
+name: Make discovery and context selection
+
+on:
+  push:
+    paths:
+      - .github/workflows/make-entrypoint-checks.yml
+      - Makefile
+      - tools/docker_context.sh
+      - tests/repository/test_launcher.py
+      - tests/repository/quality/test_make_hygiene.py
+      - tests/repository/test_conventions.py
+  pull_request:
+    paths:
+      - .github/workflows/make-entrypoint-checks.yml
+      - Makefile
+      - tools/docker_context.sh
+      - tests/repository/test_launcher.py
+      - tests/repository/quality/test_make_hygiene.py
+      - tests/repository/test_conventions.py
+
+permissions:
+  contents: read
+
+jobs:
+  make-interface:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Make introspection is passive, even with a controlling terminal
+        shell: bash
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf -- "$work"' EXIT
+          export FAKE_CONTEXT_LOG="$work/inspected"
+          export PATH="$GITHUB_WORKSPACE/tests/repository/fixtures/docker-context:$PATH"
+          for goal in checks/base-image/download checks/prepare packages/linux-idmap/download package/build tests publish/prepare; do
+            make --no-print-directory --dry-run "$goal" > /dev/null
+            status=0
+            make --no-print-directory -qp "$goal" > /dev/null || status=$?
+            if [[ "$status" != 0 && "$status" != 1 ]]; then
+              printf 'Make query failed for %s: status %s\n' "$goal" "$status" >&2
+              exit 2
+            fi
+          done
+          if command -v script > /dev/null; then
+            timeout 8s script -q -c \
+              'make --no-print-directory -qp checks/base-image/download > /dev/null' \
+              /dev/null > "$work/interactive-output"
+            if grep -Fq 'Select a local Docker context (no default)' "$work/interactive-output"; then
+              printf '%s\n' 'A completion-style Make query opened the interactive context menu.' >&2
+              exit 2
+            fi
+          fi
+          if [[ -e "$FAKE_CONTEXT_LOG" ]]; then
+            printf '%s\n' 'Make introspection inspected Docker despite executing no recipe.' >&2
+            exit 2
+          fi
+      - name: The tests aggregate selects once when actually executed
+        shell: bash
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          trap 'rm -rf -- "$work"' EXIT
+          mkdir -p "$work/tools"
+          cp Makefile "$work/Makefile"
+          cp tools/docker_context.sh "$work/tools/docker_context.sh"
+          cat > "$work/tools/repository.sh" <<'EOF'
+          source tools/docker_context.sh
+          select_docker_context
+          printf '%s %s\n' "$1" "$CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT" >> "$FAKE_TEST_LOG"
+          EOF
+          export FAKE_CONTEXT_LOG="$work/inspected" FAKE_TEST_LOG="$work/suites"
+          export PATH="$GITHUB_WORKSPACE/tests/repository/fixtures/docker-context:$PATH"
+          make --no-print-directory -C "$work" tests DOCKER_CONTEXT=local-test
+          [[ $(cat "$FAKE_CONTEXT_LOG") == inspect ]]
+          printf 'tests/repository unix:///run/user/1000/docker.sock\n%s\n' \
+            'tests/unit/linux-idmap unix:///run/user/1000/docker.sock' > "$work/expected"
+          cmp "$work/expected" "$FAKE_TEST_LOG"
