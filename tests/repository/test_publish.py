@@ -90,6 +90,8 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(0o700, directory.stat().st_mode & 0o777)
         self.assertEqual(self.note.read_bytes(), (directory / "release-notes.md").read_bytes())
         self.assertEqual(5, len(list((directory / "artifacts").iterdir())))
+        self.assertIn("make publish/release TAG=v0.2.0", prepared.stdout)
+        self.assertNotIn("ARTIFACTS=", prepared.stdout)
         published = self.run_publisher("publish", "release", default_paths=True)
         self.assertEqual(0, published.returncode, published.stdout + published.stderr)
         self.assertIn("gh release edit", self.trace.read_text())
@@ -142,6 +144,7 @@ class PublicationTests(unittest.TestCase):
         self.assertEqual(0, result.returncode, msg=result.stderr)
         self.assertEqual(self.note.read_bytes(), (self.root / "prepared/release-notes.md").read_bytes())
         self.assertEqual(5, len(list((self.root / "prepared/artifacts").iterdir())))
+        self.assertIn("make publish/release TAG=v0.2.0 ARTIFACTS=", result.stdout)
         self.assertNotIn("gh ", self.trace.read_text())
 
     def test_missing_duplicate_or_symlinked_authored_note_blocks_preparation(self):

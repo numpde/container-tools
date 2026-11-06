@@ -121,7 +121,11 @@ if [[ $action == prepare ]]; then
     [[ -f $scratch/artifacts/$wheel && -f $scratch/artifacts/$sdist ]] || fail 'TAG must match the built package version.'
     nested 'exact release artifact qualification' env WHEELHOUSE_INPUT_ORIGIN='command line' WHEELHOUSE_INPUT="$wheelhouse_directory" ARTIFACTS_INPUT_ORIGIN='command line' ARTIFACTS_INPUT="$scratch/artifacts" bash "$root/tools/linux_idmap.sh" package > "$scratch/release-test.log" 2>&1
     require_unchanged_source
-    printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then use publish/release TAG=%s (or ARTIFACTS=%q for an explicit path).\n' "$scratch" "$tag" "$scratch"
+    if [[ -v OUTPUT_INPUT_ORIGIN && $OUTPUT_INPUT_ORIGIN == 'command line' ]]; then
+        printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then run make publish/release TAG=%s ARTIFACTS=%q.\n' "$scratch" "$tag" "$scratch"
+    else
+        printf 'Prepared exact artifacts, logs and authored release notes at %s. Review them, then run make publish/release TAG=%s.\n' "$scratch" "$tag"
+    fi
     exit
 fi
 
