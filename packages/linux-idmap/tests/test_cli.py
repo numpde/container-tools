@@ -112,6 +112,34 @@ class CliTests(unittest.TestCase):
             code, out, err = self.call(self.arguments(values=True))
         self.assertEqual((0, "100000 101000 202000\n", ""), (code, out, err))
 
+    def test_inverse_values_translate_host_ids_into_container_ids(self):
+        from linux_idmap import IdRange
+        from linux_idmap.process import ProcessObservation
+        from linux_idmap.probe import ProbeResult
+
+        rootless = ProbeResult(
+            IdMap((IdRange(0, 1000, 1), IdRange(1, 100000, 65536))),
+            IdMap((IdRange(0, 100, 1), IdRange(1, 200000, 65536))), CID)
+        with patch("linux_idmap._cli.probe_identity", return_value=rootless):
+            code, out, err = self.call(["--endpoint", "unix:///test.sock", "--image", "approved:local",
+                "--interpreter", "/usr/bin/python3", "--user-uid", "0", "--user-gid", "0",
+                "--inverse", "--uid", "1000", "--gid", "100", "--values"])
+        self.assertEqual((0, "0 0\\n", ""), (code, out, err))
+
+        rootful = ProbeResult(IdMap((IdRange(0, 0, 65536),)),
+                              IdMap((IdRange(0, 0, 65536),)), CID)
+        with patch("linux_idmap._cli.probe_identity", return_value=rootful):
+            code, out, err = self.call(["--endpoint", "unix:///test.sock", "--image", "approved:local",
+                "--interpreter", "/usr/bin/python3", "--user-uid", "0", "--user-gid", "0",
+                "--inverse", "--uid", "1000", "--gid", "100", "--values"])
+        self.assertEqual((0, "1000 100\\n", ""), (code, out, err))
+
+    def test_inverse_unmapped_refuses_success_and_keeps_stdout_empty(self):
+        with patch("linux_idmap._cli.probe_identity", return_value=self.result()):
+            code, out, err = self.call(self.arguments(values=True) + ["--inverse"])
+        self.assertEqual((1, ""), (code, out))
+        self.assertEqual("unmapped-id", json.loads(err)["problem"]["category"])
+
     def test_duplicate_projections_preserve_order(self):
         with patch("linux_idmap._cli.probe_identity", return_value=self.result()):
             code, out, _ = self.call(self.arguments(values=True) + ["--uid", "0"])
