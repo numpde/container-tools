@@ -1,0 +1,25 @@
+name: linux-idmap unit checks
+
+on:
+  push:
+    paths:
+      - .github/workflows/linux-idmap.yml
+      - packages/linux-idmap/**
+  pull_request:
+    paths:
+      - .github/workflows/linux-idmap.yml
+      - packages/linux-idmap/**
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Run unit tests without installation or Docker
+        run: PYTHONPATH=packages/linux-idmap/src:packages/linux-idmap/tests python3 -B -m unittest discover -s packages/linux-idmap/tests -v
