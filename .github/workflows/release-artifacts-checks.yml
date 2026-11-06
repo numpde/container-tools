@@ -63,4 +63,5 @@ jobs:
             --env PYTHONPATH=/workspace \
             --entrypoint python3 "$image" -B -m unittest -v \
               tests.repository.test_publish \
+              tests.repository.test_launcher.LauncherTests.test_preview_discovers_new_public_roots_and_rejects_hidden_links \
               tests.repository.quality.test_source_inventory.SourceInventoryUnitTests.test_release_artifacts_are_not_public_source_roots
