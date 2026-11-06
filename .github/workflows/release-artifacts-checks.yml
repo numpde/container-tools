@@ -1,0 +1,66 @@
+name: Release artifact workspace checks
+
+on:
+  push:
+    paths:
+      - .github/workflows/release-artifacts-checks.yml
+      - .gitignore
+      - Makefile
+      - README.md
+      - tools/publish.sh
+      - tools/repository.sh
+      - tests/repository/test_publish.py
+      - tests/repository/test_launcher.py
+      - tests/repository/quality/test_source_inventory.py
+      - tests/repository/quality/sources.py
+  pull_request:
+    paths:
+      - .github/workflows/release-artifacts-checks.yml
+      - .gitignore
+      - Makefile
+      - README.md
+      - tools/publish.sh
+      - tools/repository.sh
+      - tests/repository/test_publish.py
+      - tests/repository/test_launcher.py
+      - tests/repository/quality/test_source_inventory.py
+      - tests/repository/quality/sources.py
+
+permissions:
+  contents: read
+
+jobs:
+  release-workspace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Verify release-artifacts is ignored and shell parsing is valid
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n tools/publish.sh tools/repository.sh
+          ignored=release-artifacts/v0.3.1/secret.txt
+          git check-ignore -q "$ignored"
+          printf 'Ignored release artifact path: %s\n' "$ignored"
+      - name: Exercise private release preparation and publication fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          image='docker.io/library/python:3.12.16-slim-bookworm@sha256:623674a14ef93d052bb9b0de4dbf5f28eb578a35263838941cc8aa43213c1487'
+          docker image pull "$image"
+          docker run --rm --pull never --network none --read-only \
+            --cap-drop ALL --security-opt no-new-privileges --pids-limit 128 \
+            --cpus 2 --memory 1g --memory-swap 1g \
+            --user "$(id -u):$(id -g)" \
+            --tmpfs /tmp:rw,nosuid,nodev,exec,size=256m \
+            --mount "type=bind,src=$PWD,dst=/workspace,readonly" \
+            --workdir /workspace \
+            --env CONTAINER_TOOLS_IN_CONTAINER=1 \
+            --env PYTHONDONTWRITEBYTECODE=1 \
+            --env PYTHONPATH=/workspace \
+            --entrypoint python3 "$image" -B -m unittest -v \
+              tests.repository.test_publish \
+              tests.repository.quality.test_source_inventory.SourceInventoryUnitTests.test_release_artifacts_are_not_public_source_roots
