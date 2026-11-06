@@ -34,7 +34,7 @@ ROOT_ENTRY_MANIFEST = Path("/repository-source-inventory/root-entries")
 # The coordinator explicitly keeps checkout control, credentials and writable
 # acquisition/runtime state outside source-check authority. Capturing their
 # names in the manifest proves classification without exposing their contents.
-PRIVATE_ROOT_ENTRIES = frozenset({".git", ".agents", ".codex", ".aws", "secrets"})
+PRIVATE_ROOT_ENTRIES = frozenset({".git", ".agents", ".codex", ".aws", "secrets", "release-artifacts"})
 
 
 def root_entry_visibility_findings(manifest, root):

@@ -124,7 +124,8 @@ class PublicationTests(unittest.TestCase):
         missing = self.run_publisher("publish", "release", default_paths=True)
         self.assertEqual(2, missing.returncode)
         self.assertFalse((self.root / "release-artifacts").exists())
-        self.assertNotIn("gh ", self.trace.read_text()) if self.trace.exists() else None
+        if self.trace.exists():
+            self.assertNotIn("gh ", self.trace.read_text())
 
     def test_explicit_empty_release_paths_do_not_fall_back_to_default(self):
         (self.root / "pool").mkdir()
