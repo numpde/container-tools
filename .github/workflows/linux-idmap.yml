@@ -21,5 +21,5 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           persist-credentials: false
-      - name: Run CLI and mapping unit tests without Docker
-        run: PYTHONPATH=packages/linux-idmap/src:packages/linux-idmap/tests python3 -B -m unittest discover -s packages/linux-idmap/tests -p 'test_cli.py' -v
+      - name: Run the complete unit suite without Docker
+        run: PYTHONPATH=packages/linux-idmap/src:packages/linux-idmap/tests python3 -B -m unittest discover -s packages/linux-idmap/tests -v
