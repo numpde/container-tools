@@ -182,7 +182,14 @@ if libc.unshare(0x10000000) != 0:
     error = ctypes.get_errno()
     print(json.dumps({'blocked': 'unshare', 'errno': error, 'reason': os.strerror(error)}))
     raise SystemExit(77 if error in (errno.EPERM, errno.ENOSYS) else 1)
-assert os.stat('/proc/self/ns/user').st_ino != old_namespace
+# Some hosts allow unshare but deny inspection of the resulting namespace.
+# That is a fixture capability limit, not evidence that mapping succeeded.
+try:
+    new_namespace = os.stat('/proc/self/ns/user').st_ino
+except OSError as error:
+    print(json.dumps({'blocked': 'isolated child namespace inspection', 'errno': error.errno, 'reason': str(error)}))
+    raise SystemExit(77 if error.errno in (errno.EPERM, errno.EACCES) else 1)
+assert new_namespace != old_namespace
 '''
         import linux_idmap
         source = str(Path(linux_idmap.__file__).parent.parent)
@@ -192,6 +199,7 @@ assert os.stat('/proc/self/ns/user').st_ino != old_namespace
             evidence = json.loads(result.stdout)
             unavailable = {
                 'unshare': (errno.EPERM, errno.ENOSYS),
+                'isolated child namespace inspection': (errno.EPERM, errno.EACCES),
                 'isolated child uid_map setup': (errno.EPERM, errno.EACCES),
             }
             self.assertIn(evidence['blocked'], unavailable)
