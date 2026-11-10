@@ -1,6 +1,7 @@
 """One definition of what we create and what we are allowed to remove."""
 
 from dataclasses import dataclass
+from decimal import Decimal
 
 from ._probe_model import ProbeRequest, StepError
 from . import _confinement
@@ -21,7 +22,8 @@ PROBE_SCRIPT = "import sys,time; time.sleep(int(sys.argv[1]))"
 # Probe lifecycle and confinement evidence.
 # repo-check: allow-module-constant
 ISOLATION_FIELDS = ("AutoRemove", "RestartPolicy", "NetworkMode", "ReadonlyRootfs", "CapDrop",
-                    "SecurityOpt", "Privileged", "PidMode", "CapAdd", "Devices", "DeviceRequests")
+                    "SecurityOpt", "Privileged", "PidMode", "CapAdd", "Devices", "DeviceRequests",
+                    "Memory", "MemorySwap", "PidsLimit", "NanoCpus")
 
 
 @dataclass(frozen=True)
@@ -42,12 +44,18 @@ class ProbeSpec:
         request = self.request
         # silent-defaults: allow-contract -- Default namespace mode adds no Docker option.
         namespace = ["--userns=host"] if request.userns_mode == "host" else []
+        resources = request.resources
+        limits = [] if resources is None else [
+            "--memory", str(resources.memory_bytes), "--memory-swap", str(resources.memory_bytes),
+            "--pids-limit", str(resources.pids_limit),
+            "--cpus", str(Decimal(resources.nano_cpus) / Decimal(1_000_000_000)),
+        ]
         return ["container", "create", "--pull=never", "--name", self.name,
                 "--label", OWNER_LABEL + "=" + OWNER, "--label", TOKEN_LABEL + "=" + self.token,
                 "--user", f"{request.user_uid}:{request.user_gid}",
                 "--rm", "--restart", "no", "--no-healthcheck",
                 "--network", "none", "--read-only", "--cap-drop", "ALL",
-                "--security-opt", "no-new-privileges:true", *namespace,
+                "--security-opt", "no-new-privileges:true", *limits, *namespace,
                 "--entrypoint", request.interpreter, self.image_id, *self.command]
 
     def verify(self, container, cid: str) -> None:
@@ -67,4 +75,4 @@ class ProbeSpec:
                 or not isinstance(isolation["RestartPolicy"], dict)
                 or isolation["RestartPolicy"].get("Name") not in ("", "no")):
             raise StepError("ownership", "probe cleanup or restart policy changed")
-        _confinement.verify(container)
+        _confinement.verify(container, resources=request.resources)

@@ -66,6 +66,10 @@ elif args[:2] == ["container", "create"]:
             "Privileged": False, "PidMode": "", "CapAdd": None,
             "Devices": [], "DeviceRequests": None,
             "RestartPolicy": {"Name": option(args, "--restart", "no"), "MaximumRetryCount": 0},
+            "Memory": int(option(args, "--memory", "0")),
+            "MemorySwap": int(option(args, "--memory-swap", "0")),
+            "PidsLimit": int(option(args, "--pids-limit", "0")),
+            "NanoCpus": int(float(option(args, "--cpus", "0")) * 1_000_000_000),
         },
     }
     if state.get("foreign_token"):

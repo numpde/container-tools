@@ -3,10 +3,10 @@
 from dataclasses import asdict, dataclass
 
 from .core import IdMap
-from ._probe_model import Cancellation, Bounds, Problem, ProbeFailure, ProbeHandle, ProbeRequest, ResourceState, Retirement, StepError
+from ._probe_model import Cancellation, Bounds, Problem, ProbeFailure, ProbeHandle, ProbeRequest, ProbeResources, ResourceState, Retirement, StepError
 from ._probe_scope import owned_probe
 
-__all__ = ["probe_identity", "ProbeRequest", "Bounds", "ProbeResult", "StepError",
+__all__ = ["probe_identity", "ProbeRequest", "ProbeResources", "Bounds", "ProbeResult", "StepError",
            "ProbeFailure", "ResourceState", "Problem", "Retirement", "ProbeHandle"]
 
 

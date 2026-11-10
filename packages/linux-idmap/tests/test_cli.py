@@ -14,7 +14,7 @@ from unittest.mock import patch
 import linux_idmap
 from linux_idmap import IdMap
 from linux_idmap._cli import main
-from linux_idmap.probe import Bounds, Problem, ProbeFailure, ProbeResult, ResourceState, Retirement, ProbeHandle
+from linux_idmap.probe import Bounds, ProbeResources, Problem, ProbeFailure, ProbeResult, ResourceState, Retirement, ProbeHandle
 from helpers import CID, OBSERVATION, Engine, Guard
 
 
@@ -98,6 +98,37 @@ class CliTests(unittest.TestCase):
                     self.assertEqual('confinement', payload['problem']['category'])
                     self.assertNotIn('start', engine.events)
                     self.assertNotIn('uid_map', payload)
+
+    def test_selected_probe_resource_ceilings_are_verified_before_start(self):
+        ceilings = ["--memory-bytes", "33554432", "--pids-limit", "4", "--nano-cpus", "250000000"]
+        for changed in (None, "Memory", "MemorySwap", "PidsLimit", "NanoCpus"):
+            with self.subTest(changed=changed):
+                engine = Engine()
+                if changed is not None:
+                    engine.on_create = lambda current: current.container.isolation.__setitem__(
+                        changed, current.container.isolation[changed] + 1
+                    )
+                with patch("linux_idmap._probe_scope.DockerEngine.connect", return_value=engine), \
+                     patch("linux_idmap._probe_scope.ProbeProcesses", return_value=Guard()):
+                    status, output, _ = self.call(self.arguments() + ceilings)
+                for flag, value in (("--memory", "33554432"), ("--memory-swap", "33554432"),
+                                    ("--pids-limit", "4"), ("--cpus", "0.25")):
+                    self.assertEqual(value, engine.arguments[engine.arguments.index(flag) + 1])
+                if changed is None:
+                    self.assertEqual(0, status)
+                else:
+                    self.assertEqual("confinement", json.loads(output)["problem"]["category"])
+                    self.assertNotIn("start", engine.events)
+
+    def test_partial_or_invalid_resources_never_dispatch(self):
+        for args in (["--memory-bytes", "33554432"],
+                     ["--memory-bytes", "33554432", "--pids-limit", "4", "--nano-cpus", "0"],
+                     ["--memory-bytes", "33554432", "--pids-limit", "0", "--nano-cpus", "250000000"]):
+            with self.subTest(args=args), patch("linux_idmap._cli.probe_identity") as probe:
+                status, output, _ = self.call(self.arguments() + args)
+                self.assertEqual(2, status)
+                self.assertEqual("invalid-policy", json.loads(output)["problem"]["category"])
+                probe.assert_not_called()
 
     def test_confinement_flags_are_not_caller_options(self):
         for flag in ('--confine', '--no-confine'):
