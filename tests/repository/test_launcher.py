@@ -4,6 +4,7 @@ from tools.container_guard import require_container
 
 require_container()
 
+import errno
 import os
 import pty
 import select
@@ -145,16 +146,17 @@ class LauncherTests(unittest.TestCase):
                     "FAKE_CONTEXT_LOG": str(log)}
                 for name in ("CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT",
                              "DOCKER_CONTEXT_INPUT_ORIGIN", "DOCKER_CONTEXT_INPUT"):
-                    environment.pop(name, None)
+                    if name in environment:
+                        del environment[name]
                 result = subprocess.run(
                     ["make", "--no-print-directory", *arguments],
                     cwd=ROOT, env=environment, stdin=subprocess.DEVNULL,
                     start_new_session=True, capture_output=True, text=True,
                     check=False, timeout=8,
                 )
-                self.assertIn(result.returncode, (0, 1), result.stderr)
+                self.assertIn(result.returncode, (0, 1), msg=result.stderr)
                 self.assertNotIn("Select a local Docker context (no default)", result.stderr)
-                self.assertFalse(log.exists(), f"Make discovery inspected Docker: {arguments}")
+                self.assertFalse(log.exists(), msg=f"Make discovery inspected Docker: {arguments}")
 
     def test_interactive_database_query_does_not_open_docker_menu(self):
         # Completion interrogates Make's target database with a live terminal.
@@ -165,7 +167,8 @@ class LauncherTests(unittest.TestCase):
                 "FAKE_CONTEXT_LOG": str(log)}
             for name in ("CONTAINER_TOOLS_SELECTED_DOCKER_ENDPOINT",
                          "DOCKER_CONTEXT_INPUT_ORIGIN", "DOCKER_CONTEXT_INPUT"):
-                environment.pop(name, None)
+                if name in environment:
+                    del environment[name]
             pid, terminal = pty.fork()
             if pid == 0:
                 os.chdir(ROOT)
@@ -179,22 +182,27 @@ class LauncherTests(unittest.TestCase):
                     if select.select([terminal], [], [], 0.1)[0]:
                         try:
                             received.extend(os.read(terminal, 65536))
-                        except OSError:
-                            pass
+                        except OSError as error:
+                            if error.errno != errno.EIO:
+                                raise
                     finished, candidate = os.waitpid(pid, os.WNOHANG)
                     if finished:
                         status = candidate
                         break
-                if status is None:
-                    os.killpg(pid, signal.SIGKILL)
-                    os.waitpid(pid, 0)
             finally:
-                os.close(terminal)
-            self.assertIsNotNone(status, "Make target discovery blocked on interactive input")
-            self.assertTrue(os.WIFEXITED(status), received[-2000:].decode(errors="replace"))
+                try:
+                    if status is None:
+                        try:
+                            os.killpg(pid, signal.SIGKILL)
+                        finally:
+                            os.waitpid(pid, 0)
+                finally:
+                    os.close(terminal)
+            self.assertIsNotNone(status, msg="Make target discovery blocked on interactive input")
+            self.assertTrue(os.WIFEXITED(status), msg=received[-2000:].decode(errors="replace"))
             self.assertNotIn(b"Select a local Docker context (no default)", received)
             self.assertNotIn(b"Choice [", received)
-            self.assertFalse(log.exists(), "Make database inspection called Docker")
+            self.assertFalse(log.exists(), msg="Make database inspection called Docker")
 
     def test_tests_aggregate_resolves_context_once_at_execution(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -216,7 +224,7 @@ class LauncherTests(unittest.TestCase):
                 cwd=root, env=environment, capture_output=True, text=True,
                 check=False, timeout=8,
             )
-            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(0, result.returncode, msg=result.stderr)
             self.assertEqual(["inspect"], inspected.read_text().splitlines())
             self.assertEqual([
                 "tests/repository unix:///run/user/1000/docker.sock",
