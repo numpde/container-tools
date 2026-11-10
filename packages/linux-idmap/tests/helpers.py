@@ -31,6 +31,7 @@ def container_for(spec):
         "Privileged": False, "PidMode": "",
         "CapAdd": None, "Devices": None, "DeviceRequests": None,
         "RestartPolicy": {"Name": "no"},
+        "Memory": 0, "MemorySwap": 0, "PidsLimit": 0, "NanoCpus": 0,
     }
     resources = getattr(spec.request, "resources", None)
     if resources is not None:
