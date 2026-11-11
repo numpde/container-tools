@@ -1,6 +1,7 @@
 """A deterministic engine/host pair for lifecycle tests, not Docker qualification."""
 
 from dataclasses import replace
+from decimal import Decimal
 from types import SimpleNamespace
 
 from linux_idmap._docker import Container, EngineIdentity, EngineInfo
@@ -9,7 +10,7 @@ from linux_idmap._files import FileIdentity
 from linux_idmap import IdMap
 from linux_idmap.process import ProcessObservation
 from linux_idmap.process import ProcessIdentity
-from linux_idmap.probe import Bounds, ProbeRequest
+from linux_idmap.probe import Bounds, ProbeRequest, ProbeResources
 from linux_idmap._probe_spec import OWNER
 
 CID = "c" * 64
@@ -31,7 +32,12 @@ def container_for(spec):
         "Privileged": False, "PidMode": "",
         "CapAdd": None, "Devices": None, "DeviceRequests": None,
         "RestartPolicy": {"Name": "no"},
+        "Memory": 0, "MemorySwap": 0, "PidsLimit": 0, "NanoCpus": 0,
     }
+    resources = spec.request.resources
+    if resources is not None:
+        isolation.update(Memory=resources.memory_bytes, MemorySwap=resources.memory_bytes,
+                         PidsLimit=resources.pids_limit, NanoCpus=resources.nano_cpus)
     # silent-defaults: allow-contract -- The fixture models Docker inspect encoding of explicit default versus host user namespaces; tests/test_probe_addon.py::OperationTests.
     return Container(CID, spec.name, IMAGE, spec.token, OWNER, 0, False, "not-started",
                      f"{spec.request.user_uid}:{spec.request.user_gid}", "" if spec.request.userns_mode == "default" else "host",
@@ -64,8 +70,14 @@ class Engine:
         uid, gid = option("--user").split(":")
         # silent-defaults: allow-contract -- The fixture maps absent host mode to Docker default mode.
         userns_mode = "host" if "--userns=host" in arguments else "default"
+        resources = None
+        if "--memory" in arguments:
+            resources = ProbeResources(
+                int(option("--memory")), int(option("--pids-limit")),
+                int(Decimal(option("--cpus")) * 1_000_000_000),
+            )
         policy = SimpleNamespace(user_uid=uid, user_gid=gid, interpreter=option("--entrypoint"),
-                                 userns_mode=userns_mode)
+                                 userns_mode=userns_mode, resources=resources)
         spec = SimpleNamespace(name=option("--name"), image_id=arguments[image_index],
                                token=labels["linux-idmap.token"], request=policy,
                                command=tuple(arguments[image_index + 1:]))

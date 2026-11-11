@@ -285,6 +285,17 @@ with patch('linux_idmap._command.subprocess.Popen') as spawn:
         finally:
             process.returncode = os.waitstatus_to_exitcode(status)
 
+    def test_vanished_group_still_invokes_leader_reaping(self):
+        process = SimpleNamespace(pid=123, returncode=None)
+        events = Mock()
+        events.kill.side_effect = ProcessLookupError("group already vanished")
+        with patch('linux_idmap._command._peek_exit', events.peek), \
+             patch('linux_idmap._command.os.killpg', events.kill), \
+             patch('linux_idmap._command._reap', events.reap):
+            command._terminate(process)
+        self.assertEqual(['peek', 'kill', 'reap'], [event[0] for event in events.mock_calls])
+        events.reap.assert_called_once_with(process)
+
     def test_failed_group_signal_still_reaps_and_remains_a_failure(self):
         process = SimpleNamespace(pid=123, returncode=None)
         signal_error = PermissionError('private signal detail')

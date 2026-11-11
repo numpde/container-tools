@@ -82,7 +82,11 @@ class IsolationEvidenceContractTests(unittest.TestCase):
             '"PidMode":{{json .HostConfig.PidMode}},'
             '"CapAdd":{{json .HostConfig.CapAdd}},'
             '"Devices":{{json .HostConfig.Devices}},'
-            '"DeviceRequests":{{json .HostConfig.DeviceRequests}}}}',
+            '"DeviceRequests":{{json .HostConfig.DeviceRequests}},'
+            '"Memory":{{json .HostConfig.Memory}},'
+            '"MemorySwap":{{json .HostConfig.MemorySwap}},'
+            '"PidsLimit":{{json .HostConfig.PidsLimit}},'
+            '"NanoCpus":{{json .HostConfig.NanoCpus}}}}',
             INSPECT_FORMAT,
         )
 

@@ -52,7 +52,7 @@ class PublicApiTests(unittest.TestCase):
 
     def test_probe_policy_and_failure_types_are_available_together(self):
         self.assertEqual(
-            {'probe_identity', 'ProbeRequest', 'Bounds', 'ProbeResult', 'StepError',
+            {'probe_identity', 'ProbeRequest', 'ProbeResources', 'Bounds', 'ProbeResult', 'StepError',
              'ProbeFailure', 'ResourceState', 'Problem', 'Retirement', 'ProbeHandle'},
             set(probe.__all__),
         )

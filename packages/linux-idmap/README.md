@@ -52,7 +52,7 @@ raise `IdentityError`; the result is an observation, not a lock on future state.
 ## Probe an image before deployment
 
 ```python
-from linux_idmap.probe import ProbeRequest, probe_identity
+from linux_idmap.probe import ProbeRequest, ProbeResources, probe_identity
 
 request = ProbeRequest(
     endpoint="unix:///run/docker.sock",
@@ -73,6 +73,13 @@ Every probe has no network, a read-only root, dropped capabilities and
 no-new-privileges. Maps are returned only after confirmed container and process
 retirement. Keep the later deployment's engine and user-namespace policy consistent
 with the probe. Permission changes remain the caller's responsibility.
+
+Version 0.3.3 supports exact, optional probe resource ceilings:
+`resources=ProbeResources(memory_bytes=33554432, pids_limit=4, nano_cpus=250000000)`
+on `ProbeRequest`, or all three CLI flags `--memory-bytes 33554432 --pids-limit 4
+--nano-cpus 250000000`. Its memory and swap limits are identical. The probe
+verifies every configured ceiling against the inspected Docker container
+before starting it. Callers not selecting a resource policy are unchanged.
 
 `ProbeRequest` also accepts `userns_mode="default"` or `"host"`, and `bounds=Bounds(...)`.
 Invalid policy raises `StepError`; operation failures raise `ProbeFailure`.

@@ -84,7 +84,7 @@ class PublicationTests(unittest.TestCase):
     def test_default_release_directory_is_private_versioned_and_reused_by_publication(self):
         (self.root / "pool").mkdir()
         prepared = self.run_publisher("publish", "prepare", default_paths=True)
-        self.assertEqual(0, prepared.returncode, prepared.stdout + prepared.stderr)
+        self.assertEqual(0, prepared.returncode, msg=prepared.stdout + prepared.stderr)
         directory = self.root / "release-artifacts/v0.2.0"
         self.assertEqual(0o700, directory.parent.stat().st_mode & 0o777)
         self.assertEqual(0o700, directory.stat().st_mode & 0o777)
@@ -93,7 +93,7 @@ class PublicationTests(unittest.TestCase):
         self.assertIn("make publish/release TAG=v0.2.0", prepared.stdout)
         self.assertNotIn("ARTIFACTS=", prepared.stdout)
         published = self.run_publisher("publish", "release", default_paths=True)
-        self.assertEqual(0, published.returncode, published.stdout + published.stderr)
+        self.assertEqual(0, published.returncode, msg=published.stdout + published.stderr)
         self.assertIn("gh release edit", self.trace.read_text())
 
     def test_default_preparation_refuses_stale_outputs_and_unsafe_parents(self):
@@ -134,7 +134,7 @@ class PublicationTests(unittest.TestCase):
         for action, variable in (("prepare", "OUTPUT_INPUT"), ("release", "ARTIFACTS_INPUT")):
             with self.subTest(action=action):
                 result = self.run_publisher("publish", action, path_overrides={variable: ""})
-                self.assertEqual(2, result.returncode, result.stderr)
+                self.assertEqual(2, result.returncode, msg=result.stderr)
                 self.assertFalse((self.root / "release-artifacts").exists())
 
     def test_prepare_keeps_authored_note_and_qualified_files_without_github_access(self):
