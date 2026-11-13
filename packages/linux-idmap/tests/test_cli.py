@@ -272,6 +272,62 @@ class CliTests(unittest.TestCase):
                 self.assertNotIn('mapped_uids', payload)
         self.assertEqual(previous, signal.getsignal(signal.SIGTERM))
 
+    def test_signal_during_output_cannot_report_success(self):
+        from linux_idmap import _cli
+
+        emit = _cli._emit
+        for number in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            previous = signal.getsignal(number)
+            for values in (False, True):
+                with self.subTest(signal=number, values=values):
+                    def interrupted_output(payload, *, values_mode):
+                        if payload['ok']:
+                            signal.raise_signal(number)
+                        emit(payload, values_mode=values_mode)
+
+                    with patch('linux_idmap._cli.probe_identity', return_value=self.result()), \
+                         patch('linux_idmap._cli._emit', side_effect=interrupted_output):
+                        code, _out, err = self.call(self.arguments(values=values))
+                    self.assertEqual(130, code)
+                    self.assertEqual('cancelled', json.loads(err)['problem']['category'])
+                    self.assertEqual(ResourceState.RETIRED, json.loads(err)['state'])
+                    self.assertEqual(CID, json.loads(err)['container_id'])
+                    self.assertEqual(previous, signal.getsignal(number))
+
+    def test_signal_during_handler_restoration_cannot_report_success(self):
+        install = signal.signal
+        for number in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+            previous = signal.getsignal(number)
+            for values in (False, True):
+                with self.subTest(signal=number, values=values):
+                    def interrupted_restoration(selected, handler):
+                        if selected == number and handler == previous:
+                            signal.raise_signal(number)
+                        return install(selected, handler)
+
+                    with patch('linux_idmap._cli.probe_identity', return_value=self.result()), \
+                         patch('linux_idmap._cli.signal.signal', side_effect=interrupted_restoration):
+                        code, _out, err = self.call(self.arguments(values=values))
+                    self.assertEqual(130, code)
+                    self.assertEqual('cancelled', json.loads(err)['problem']['category'])
+                    self.assertEqual(ResourceState.RETIRED, json.loads(err)['state'])
+                    self.assertEqual(previous, signal.getsignal(number))
+
+    def test_late_signal_preserves_unresolved_retirement_failure(self):
+        from linux_idmap import _cli
+
+        emit = _cli._emit
+
+        def interrupted_output(payload, *, values_mode):
+            signal.raise_signal(signal.SIGTERM)
+            emit(payload, values_mode=values_mode)
+
+        with patch('linux_idmap._cli.probe_identity', side_effect=self.failure()), \
+             patch('linux_idmap._cli._emit', side_effect=interrupted_output):
+            code, out, _err = self.call(self.arguments())
+        self.assertEqual(3, code)
+        self.assertEqual(ResourceState.UNRESOLVED, json.loads(out)['state'])
+
     def test_signal_handler_is_lock_free_and_accepts_reentrant_signals(self):
         program = r'''from contextlib import ExitStack
 import faulthandler
