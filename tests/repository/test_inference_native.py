@@ -1580,42 +1580,42 @@ class StdioNativeTests(unittest.TestCase):
     def test_blocked_public_output_cancellation_retires_every_owned_process(self):
         for stream in ("stdout", "stderr"):
             for signum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
-                with self.subTest(stream=stream, signal=signum):
-                    self.observation.unlink(missing_ok=True)
-                    (self.root / "write-complete").unlink(missing_ok=True)
-                    (self.root / "retired").unlink(missing_ok=True)
-                    command, environment = self.fact_command(
-                        budget="untimed",
-                        additions={
-                            "NATIVE_BEHAVIOR": "blocked-output",
-                            "NATIVE_BLOCK_STREAM": stream,
-                            "NATIVE_CLEANUP_FAILURE": "after-delete",
-                        },
-                    )
-                    # The helper returns the diagnostic; publishing that result
-                    # to this deliberately full pipe is the harness's decision.
-                    diagnostic = self.root / "stdio-cleanup-diagnostic"
-                    publication = 'printf "%s" "$inference_diagnostic" >&2'
-                    self.assertEqual(1, command[2].count(publication))
-                    command[2] = command[2].replace(
-                        publication, 'printf "%s" "$inference_diagnostic" > "$NATIVE_STDIO_DIAGNOSTIC"', 1
-                    )
-                    environment["NATIVE_STDIO_DIAGNOSTIC"] = str(diagnostic)
-                    process = subprocess.Popen(
-                        command, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
-                    )
-                    self.addCleanup(self.retire_probe, process)
-                    self.await_file(self.observation)
-                    observed = json.loads(self.observation.read_text())
-                    wait_channel = Path("/proc", str(observed["pid"]), "wchan")
-                    deadline = time.monotonic() + 2
-                    while (
-                        wait_channel.read_text().strip() not in {"pipe_write", "anon_pipe_write"} and time.monotonic() < deadline
-                    ):
-                        time.sleep(0.01)
-                    self.assertIn(wait_channel.read_text().strip(), {"pipe_write", "anon_pipe_write"})
-                    self.assertFalse((self.root / "write-complete").exists())
-                    try:
+                process = None
+                try:
+                    with self.subTest(stream=stream, signal=signum):
+                        self.observation.unlink(missing_ok=True)
+                        (self.root / "write-complete").unlink(missing_ok=True)
+                        (self.root / "retired").unlink(missing_ok=True)
+                        command, environment = self.fact_command(
+                            budget="untimed",
+                            additions={
+                                "NATIVE_BEHAVIOR": "blocked-output",
+                                "NATIVE_BLOCK_STREAM": stream,
+                                "NATIVE_CLEANUP_FAILURE": "after-delete",
+                            },
+                        )
+                        # The helper returns the diagnostic; publishing that result
+                        # to this deliberately full pipe is the harness's decision.
+                        diagnostic = self.root / "stdio-cleanup-diagnostic"
+                        publication = 'printf "%s" "$inference_diagnostic" >&2'
+                        self.assertEqual(1, command[2].count(publication))
+                        command[2] = command[2].replace(
+                            publication, 'printf "%s" "$inference_diagnostic" > "$NATIVE_STDIO_DIAGNOSTIC"', 1
+                        )
+                        environment["NATIVE_STDIO_DIAGNOSTIC"] = str(diagnostic)
+                        process = subprocess.Popen(
+                            command, env=environment, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True
+                        )
+                        self.await_file(self.observation)
+                        observed = json.loads(self.observation.read_text())
+                        wait_channel = Path("/proc", str(observed["pid"]), "wchan")
+                        deadline = time.monotonic() + 2
+                        while (
+                            wait_channel.read_text().strip() not in {"pipe_write", "anon_pipe_write"} and time.monotonic() < deadline
+                        ):
+                            time.sleep(0.01)
+                        self.assertIn(wait_channel.read_text().strip(), {"pipe_write", "anon_pipe_write"})
+                        self.assertFalse((self.root / "write-complete").exists())
                         process.send_signal(signum)
                         # Keep both consumers unread until owner exit. communicate
                         # would drain a full stderr pipe and conceal owner writes.
@@ -1628,13 +1628,23 @@ class StdioNativeTests(unittest.TestCase):
                             f"Cannot confirm native client evidence directory removal; attempted path {scratch} (status 23).\n",
                             diagnostic.read_text(),
                         )
+                finally:
+                    # Settle even failed startup before reusing observation paths.
+                    try:
+                        if process is not None:
+                            if process.poll() is None:
+                                process.send_signal(signal.SIGTERM)
+                            try:
+                                _, stderr = process.communicate(timeout=NATIVE_FIXTURE_WATCHDOG_SECONDS)
+                                self.retain_cleanup(stderr.decode())
+                            finally:
+                                CapturedNativeTests.retire_probe(self, process)
                     finally:
-                        for identifier in (observed["pid"], observed["descendant"]):
-                            self.kill_recorded_fixture(identifier)
-                        if process.poll() is None:
-                            os.killpg(process.pid, signal.SIGKILL)
-                        _, stderr = process.communicate(timeout=4)
-                        self.retain_cleanup(stderr.decode())
+                        if self.observation.exists():
+                            observed = json.loads(self.observation.read_text())
+                            for key in ("pid", "descendant"):
+                                if key in observed:
+                                    self.kill_recorded_fixture(observed[key])
 
     def test_first_stdio_child_sees_false_before_pid_capture_and_birth_cancellation(self):
         source = self.helper.read_text()
